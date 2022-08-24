@@ -443,7 +443,7 @@ dream_interface = gr.Interface(
         gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label="DDIM ETA", value=0.0, visible=False),
         gr.Slider(minimum=1, maximum=50, step=1, label='Iterations (How many times to run)', value=1),
         gr.Slider(minimum=1, maximum=8, step=1, label='Samples', value=1),
-        gr.Slider(minimum=0.1, maximum=30.0, step=0.01, label="CFG Scale", value=7.0, visible=True),
+        gr.Textbox(placeholder="7.0", label='Classifier Free Guidance Scale, Floating number, e.g. 7.0', lines=1, value=7.0),
         gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label='Image strength', value=0.75, visible=False),
         gr.Number(label='Seed', value=-1),
         gr.Slider(minimum=64, maximum=2048, step=64, label="Height", value=512),
