@@ -10,7 +10,7 @@ Click to link provided by it to open gradio site with GUI. Supports GFPGAN to fi
 
 
 
-Based on https://github.com/harubaru/waifu-diffusion/
+Based on https://github.com/harubaru/waifu-diffusion/ and https://rentry.org/kretard
 
 Now with weighted prompts support from https://github.com/lstein/stable-diffusion#weighted-prompts
 
