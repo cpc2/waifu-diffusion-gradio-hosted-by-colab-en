@@ -420,10 +420,25 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
     #files.download(f'/content/waifu-diffusion/outputs/img2img-samples/samples/0.jpg') #not working
     return f, rng_seed, message
 
+def dev_dream(prompt: str, init_img,use_img: bool, ddim_steps: int, plms: bool, fixed_code: bool, ddim_eta: float, n_iter: int, n_samples: int, cfg_scales: str, denoising_strength: float, seed: int, height: int, width: int, same_seed: bool, GFPGAN: bool, bg_upsampling: bool, upscale: int):
+    prompts = list(map(str, prompt.split('|'))) 
+    if not use_img:
+        init_img=None
+    f, rng_seed, message = []
+    for prompt in prompts:
+        ff, rng_seedf, messagef = dream(prompt, init_img, ddim_steps, plms, fixed_code, ddim_eta, n_iter, n_samples, cfg_scales, denoising_strength, seed, height, width, same_seed, GFPGAN, bg_upsampling, upscale)
+        f.append(ff)
+        rng_seed.append(rng_seedf)
+        messagef.append(messagef)
+    return f, rng_seed, message
+
+
+
 dream_interface = gr.Interface(
     dream,
     inputs=[
-        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),        gr.Variable(value=None, visible=False),
+        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),        
+        gr.Variable(value=None, visible=False),
         gr.Slider(minimum=1, maximum=200, step=1, label="Шаги диффузии, идеал - 100.", value=50),
         gr.Checkbox(label='Включить PLMS ', value=True),
         gr.Checkbox(label='Сэмплинг с одной точки', value=False),
@@ -454,7 +469,8 @@ dream_interface = gr.Interface(
 img2img_interface = gr.Interface(
     dream,
     inputs=[
-        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),        gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
+        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),
+        gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
         gr.Slider(minimum=1, maximum=200, step=1, label="Шаги диффузии, идеал - 100.", value=100),
         gr.Checkbox(label='Включить PLMS ', value=True, vivible=False),
         gr.Checkbox(label='Сэмплинг с одной точки', value=False, vivible=False),
@@ -482,17 +498,19 @@ img2img_interface = gr.Interface(
 )
 
 ctrbbl_interface = gr.Interface(
-    dream,
+    dev_dream,
     inputs=[
-        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),        gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
+        gr.Textbox(label='Текстовые запросы разраниченные символом "|". Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),
+        gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
+        gr.Checkbox(label='Использовать img2img (выключенно, значит картинка игнорируется) ', value=False, vivible=True),
         gr.Slider(minimum=1, maximum=200, step=1, label="Шаги диффузии, идеал - 100.", value=100),
-        gr.Checkbox(label='Включить PLMS ', value=True, vivible=False),
-        gr.Checkbox(label='Сэмплинг с одной точки', value=False, vivible=False),
-        gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label="DDIM ETA", value=0.0, visible=False),
+        gr.Checkbox(label='Включить PLMS ', value=True, vivible=True),
+        gr.Checkbox(label='Сэмплинг с одной точки', value=False, vivible=True),
+        gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label="DDIM ETA", value=0.0, visible=True),
         gr.Slider(minimum=1, maximum=50, step=1, label='Сколько раз сгенерировать по запросу (последовательно)', value=1),
         gr.Slider(minimum=1, maximum=8, step=1, label='Сколько картинок за раз (одновременно). ЖРЕТ МНОГО ПАМЯТИ', value=1),
         gr.Textbox(placeholder="7.0", label='Classifier Free Guidance Scales,  через пробел либо только одна. Если больше одной, сэмплит один и тот же запрос с разными cfg. Обязательно число с точкой, типа 7.0 или 15.0', lines=1, value=9.0),
-        gr.Slider(minimum=0.0, maximumx=1.0, step=0.01, label='Процент шагов, указанных выше чтобы пройтись по картинке. Моюно считать "силой"', value=0.75),
+        gr.Slider(minimum=0.0, maximumx=1.0, step=0.01, label='Процент шагов, указанных выше чтобы пройтись по картинке. Можно считать "силой" (игнорируется при text2img', value=0.75),
         gr.Number(label='Сид', value=-1),
         gr.Slider(minimum=64, maximum=2048, step=64, label="Resize Height", value=512),
         gr.Slider(minimum=64, maximum=2048, step=64, label="Resize Width", value=512),
@@ -507,8 +525,8 @@ ctrbbl_interface = gr.Interface(
         gr.Number(label='Seed'),
         gr.Textbox(label='Чтобы скачать папку с результатами, открой в левой части колаба файлы и скачай указанные папки')
     ],
-    title="Stable Diffusion Imagewegwsg-to-Image",
-    description="генерация изображения из изображения",
+    title="Stable Diffusion multiprompt",
+    description="эксперементальная вкладка чтобы найти идеальные параметры",
 )
 
 
