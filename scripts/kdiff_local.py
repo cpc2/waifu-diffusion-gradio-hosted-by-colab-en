@@ -182,7 +182,7 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
         type=str,
         nargs="?",
         help="dir to write results to",
-        default="/content/"
+        default="./waifu-diffusion-main/outputs/txt2img-samples"
     )
 
     parser.add_argument(
@@ -240,7 +240,7 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
     parser.add_argument(
         "--ckpt",
         type=str,
-        default="./models/ldm/stable-diffusion-v1/model.ckpt\model.ckpt",
+        default="./models/ldm/stable-diffusion-v1/model.ckpt",
         help="path to checkpoint of model",
     )
     parser.add_argument(
