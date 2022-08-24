@@ -30,7 +30,7 @@ python3 ./scripts/kdiff_local.py
 ```
 
 # Локальный запуск (перевод):
-Сначала установите [conda](https://conda.io/) и запустите в терминале:
+Сначала установите Миниконду с https://conda.io/ и запустите в терминале:
 ```
 conda env create -f environment.yaml
 conda activate ldm
