@@ -47,7 +47,7 @@ def FACE_RESTORATION(image, bg_upsampling, upscale):
     arch = 'clean'
     channel_multiplier = 2
     model_name = 'GFPGANv1.3'
-    model_path = os.path.join('/content/GFPGAN/experiments/pretrained_models/GFPGANv1.3.pth')
+    model_path = os.path.join('./models/ldm/stable-diffusion-v1/GFPGANv1.3.pth')
     restorer = GFPGANer(
         model_path=model_path,
         upscale=1,
