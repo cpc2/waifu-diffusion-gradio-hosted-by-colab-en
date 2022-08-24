@@ -1,7 +1,15 @@
-# Hosting gradio app in colab in colab:
-https://colab.research.google.com/drive/18YLSgh5gGjjsilyeSH-fB65Ml9M-e_a6
+# Stable Diffusion (Colab version with GradIO web interface):
 
-Only supports Russan language because it is. Without blakjack for this time.
+English Notebook:
+https://colab.research.google.com/drive/1CJBd4RsmTqPNiRc4pdmbcT8CS9DmoIjE
+
+All Credits to Mimocro. Thanks for your efforts! Let's talk, implementation of language selection in progress, would you consider merging once it's done?
+
+Original fork:
+https://github.com/Mimocro/waifu-diffusion-gradio-hosted-by-colab
+
+Original Notebook (Russian)
+https://colab.research.google.com/drive/18YLSgh5gGjjsilyeSH-fB65Ml9M-e_a6
 
 At the last cell 
 ![colab](assets/Colab.png)
