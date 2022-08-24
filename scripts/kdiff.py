@@ -420,7 +420,6 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
     #files.download(f'/content/waifu-diffusion/outputs/img2img-samples/samples/0.jpg') #not working
     return f, rng_seed, message
 
-
 def dev_dream(prompt: str, init_img,use_img: bool, ddim_steps: int, plms: bool, fixed_code: bool, ddim_eta: float, n_iter: int, n_samples: int, cfg_scales: str, denoising_strength: float, seed: int, height: int, width: int, same_seed: bool, GFPGAN: bool, bg_upsampling: bool, upscale: int):
     prompts = list(map(str, prompt.split('|'))) 
     if not use_img:
@@ -431,7 +430,7 @@ def dev_dream(prompt: str, init_img,use_img: bool, ddim_steps: int, plms: bool, 
         f+=ff
         rng_seed+=str(rng_seedf)
         message+=messagef
-    return ff, rng_seedf, messagef
+    return f, rng_seed, message
 
 dream_interface = gr.Interface(
     dream,
