@@ -166,7 +166,7 @@ def split_weighted_subprompts(text):
 
 
 config = OmegaConf.load("configs/stable-diffusion/v1-inference.yaml")
-model = load_model_from_config(config, "./models/ldm/stable-diffusion-v1/model-pruned.ckpt")
+model = load_model_from_config(config, "./models/ldm/stable-diffusion-v1/model.ckpt")
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 model = model.half().to(device)
@@ -239,7 +239,7 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
     parser.add_argument(
         "--ckpt",
         type=str,
-        default="./models/ldm/stable-diffusion-v1/model-pruned.ckpt",
+        default="./models/ldm/stable-diffusion-v1/model.ckpt",
         help="path to checkpoint of model",
     )
     parser.add_argument(
@@ -328,11 +328,11 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
                         output_images[-1].append(aaa)
                         output_images[-1].append(prompts[0])
 
-                        os.makedirs(f'/content/{aaa}', exist_ok=True)
+                        os.makedirs(f'./outputs/txt2img-samples/{aaa}', exist_ok=True)
                         for n in trange(n_iter, desc="Sampling", disable=not accelerator.is_main_process):
                             
                             
-                            with open(f'/content/{aaa}/prompt.txt', 'w') as f:
+                            with open(f'./outputs/txt2img-samples/{aaa}/prompt.txt', 'w') as f:
                                 f.write(prompts[0])
                             
                             if n_iter > 1: seedit += 1
@@ -405,10 +405,10 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
     message = ''
     for i in range(len(output_images)):
         aaa = output_images[i][0]
-        message+= f'Запрос "{output_images[i][1]}" находится в папке /content/{aaa}/ \n'
+        message+= f'Запрос "{output_images[i][1]}" находится в папке ./outputs/txt2img-samples/{aaa}/ \n'
         for k in range(2, len(output_images[i])):
             cfg=cfg_scales
-            pt = f'/content/{aaa}/{k-2}.jpg'
+            pt = f'./outputs/txt2img-samples/{aaa}/{k-2}.jpg'
             if GFPGAN:
                 (Image.fromarray(FACE_RESTORATION(output_images[i][k], bg_upsampling, upscale).astype(np.uint8))).save(pt, format = 'JPEG', optimize = True)
             else:
