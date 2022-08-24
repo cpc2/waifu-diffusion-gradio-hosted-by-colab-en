@@ -437,7 +437,7 @@ dream_interface = gr.Interface(
     inputs=[
         gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),        
         gr.Variable(value=None, visible=False),
-        gr.Slider(minimum=1, maximum=200, step=1, label="Шаги диффузии, идеал - 100.", value=50),
+        gr.Slider(minimum=1, maximum=500, step=1, label="Шаги диффузии, идеал - 100.", value=50),
         gr.Checkbox(label='Включить PLMS ', value=True),
         gr.Checkbox(label='Сэмплинг с одной точки', value=False),
         gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label="DDIM ETA", value=0.0, visible=False),
@@ -469,7 +469,7 @@ img2img_interface = gr.Interface(
     inputs=[
         gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),
         gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
-        gr.Slider(minimum=1, maximum=200, step=1, label="Шаги диффузии, идеал - 100.", value=100),
+        gr.Slider(minimum=1, maximum=500, step=1, label="Шаги диффузии, идеал - 100.", value=100),
         gr.Checkbox(label='Включить PLMS ', value=True, vivible=False),
         gr.Checkbox(label='Сэмплинг с одной точки', value=False, vivible=False),
         gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label="DDIM ETA", value=0.0, visible=False),
@@ -501,7 +501,7 @@ ctrbbl_interface = gr.Interface(
         gr.Textbox(label='Текстовые запросы разраниченные символом "|". Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),
         gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
         gr.Checkbox(label='Использовать img2img (выключенно, значит картинка игнорируется) ', value=False, vivible=True),
-        gr.Slider(minimum=1, maximum=200, step=1, label="Шаги диффузии, идеал - 100.", value=100),
+        gr.Slider(minimum=1, maximum=500, step=1, label="Шаги диффузии, идеал - 100.", value=100),
         gr.Checkbox(label='Включить PLMS ', value=True, vivible=True),
         gr.Checkbox(label='Сэмплинг с одной точки', value=False, vivible=True),
         gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label="DDIM ETA", value=0.0, visible=True),
