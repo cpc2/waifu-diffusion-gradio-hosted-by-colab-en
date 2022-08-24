@@ -62,8 +62,7 @@ def FACE_RESTORATION(image, bg_upsampling, upscale):
     cropped_faces, restored_faces, restored_img = restorer.enhance(
             input_img, has_aligned=False, only_center_face=False, paste_back=True)
 
-    for idx, (cropped_face, restored_face) in enumerate(zip(cropped_faces, restored_faces)):
-        image = cv2.cvtColor(restored_img, cv2.COLOR_BGR2RGB)
+    image = cv2.cvtColor(restored_img, cv2.COLOR_BGR2RGB)
     image = bg_upsampler.enhance(image, outscale=upscale)[0]
     return image
 
