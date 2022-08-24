@@ -458,7 +458,7 @@ dream_interface = gr.Interface(
         gr.Number(label='Seed'),
         gr.Textbox(label='Saved to Drive')
     ],
-    title="Stable Diffusion 1.4 текст в картинку",
+    title="Stable Diffusion 1.4 text to image",
     description="             ",
 )
 
