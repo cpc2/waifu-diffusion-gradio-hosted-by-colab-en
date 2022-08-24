@@ -6,7 +6,7 @@ import torch.nn as nn
 import numpy as np
 from omegaconf import OmegaConf
 from PIL import Image
-from tqdm.notebook import tqdm, trange
+from tqdm import tqdm, trange
 from itertools import islice
 from einops import rearrange, repeat
 from torchvision.utils import make_grid
@@ -166,7 +166,7 @@ def split_weighted_subprompts(text):
 
 
 config = OmegaConf.load("configs/stable-diffusion/v1-inference.yaml")
-model = load_model_from_config(config, "./models/ldm/stable-diffusion-v1/model.ckpt")
+model = load_model_from_config(config, "./models/ldm/stable-diffusion-v1/model-pruned.ckpt")
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 model = model.half().to(device)
@@ -239,7 +239,7 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
     parser.add_argument(
         "--ckpt",
         type=str,
-        default="./models/ldm/stable-diffusion-v1/model.ckpt",
+        default="./models/ldm/stable-diffusion-v1/model-pruned.ckpt",
         help="path to checkpoint of model",
     )
     parser.add_argument(
