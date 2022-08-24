@@ -421,7 +421,7 @@ def dev_dream(prompt: str, init_img,use_img: bool, ddim_steps: int, plms: bool, 
         f+=ff
         rng_seed+=str(rng_seedf)
         message+=messagef
-    return ff, rng_seedf, messagef
+    return f, rng_seed, message
 
 config = OmegaConf.load("configs/stable-diffusion/v1-inference.yaml")
 model = load_model_from_config(config, "./models/ldm/stable-diffusion-v1/model-pruned.ckpt")
