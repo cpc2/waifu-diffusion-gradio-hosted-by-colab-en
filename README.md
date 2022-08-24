@@ -14,13 +14,14 @@ Now with weighted prompts support from https://github.com/lstein/stable-diffusio
 
 # Hosting local gradio app with huge improvments and modifications:
 
-First, install this repo and all requirements like original (english guide with weak gradio app https://rentry.org/kretard), then install https://github.com/TencentARC/GFPGAN by:
-'''
+First, install this repo and all requirements like original (english guide with weak gradio app https://rentry.org/kretard), then install https://github.com/TencentARC/GFPGAN by
+```
 git clone https://github.com/TencentARC/GFPGAN
 pip install basicsr facexlib yapf lmdb opencv-python pyyaml tb-nightly --no-deps
 python setup.py develop 
 pip install realesrgan
-'''
+```
+
 And download GFPGAN weights https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.3.pth to same directoy as stable diffusion weights (waifu-diffusion-gradio-hosted-by-colab/models/ldm/stable-diffusion-v1/)
 
 Finnaly, run 
