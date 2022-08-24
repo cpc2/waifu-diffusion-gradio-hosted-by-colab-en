@@ -424,8 +424,7 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
 dream_interface = gr.Interface(
     dream,
     inputs=[
-        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен).',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),
-        gr.Variable(value=None, visible=False),
+        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),        gr.Variable(value=None, visible=False),
         gr.Slider(minimum=1, maximum=200, step=1, label="Шаги диффузии, идеал - 100.", value=50),
         gr.Checkbox(label='Включить PLMS ', value=True),
         gr.Checkbox(label='Сэмплинг с одной точки', value=False),
@@ -456,8 +455,7 @@ dream_interface = gr.Interface(
 img2img_interface = gr.Interface(
     dream,
     inputs=[
-        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен).',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),
-        gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
+        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),        gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
         gr.Slider(minimum=1, maximum=200, step=1, label="Шаги диффузии, идеал - 100.", value=100),
         gr.Checkbox(label='Включить PLMS ', value=True, vivible=False),
         gr.Checkbox(label='Сэмплинг с одной точки', value=False, vivible=False),
@@ -487,8 +485,7 @@ img2img_interface = gr.Interface(
 ctrbbl_interface = gr.Interface(
     dream,
     inputs=[
-        gr.Textbox(placeholder="A fantasy landscape, trending on artstation.", lines=1),
-        gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
+        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),        gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
         gr.Slider(minimum=1, maximum=200, step=1, label="Шаги диффузии, идеал - 100.", value=100),
         gr.Checkbox(label='Включить PLMS ', value=True, vivible=False),
         gr.Checkbox(label='Сэмплинг с одной точки', value=False, vivible=False),
@@ -496,7 +493,7 @@ ctrbbl_interface = gr.Interface(
         gr.Slider(minimum=1, maximum=50, step=1, label='Сколько раз сгенерировать по запросу (последовательно)', value=1),
         gr.Slider(minimum=1, maximum=8, step=1, label='Сколько картинок за раз (одновременно). ЖРЕТ МНОГО ПАМЯТИ', value=1),
         gr.Textbox(placeholder="7.0", label='Classifier Free Guidance Scales,  через пробел либо только одна. Если больше одной, сэмплит один и тот же запрос с разными cfg. Обязательно число с точкой, типа 7.0 или 15.0', lines=1, value=9.0),
-        gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label='Процент шагов, указанных выше чтобы пройтись по картинке. Моюно считать "силой"', value=0.75),
+        gr.Slider(minimum=0.0, maximumx=1.0, step=0.01, label='Процент шагов, указанных выше чтобы пройтись по картинке. Моюно считать "силой"', value=0.75),
         gr.Number(label='Сид', value=-1),
         gr.Slider(minimum=64, maximum=2048, step=64, label="Resize Height", value=512),
         gr.Slider(minimum=64, maximum=2048, step=64, label="Resize Width", value=512),
