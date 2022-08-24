@@ -1,7 +1,8 @@
 # Hosting gradio app in colab in colab:
 https://colab.research.google.com/drive/18YLSgh5gGjjsilyeSH-fB65Ml9M-e_a6
 
-Only supports Russan language because it is.
+Only supports Russan language because it is. Without blakjack for this time.
+
 At the last cell 
 ![colab](assets/Colab.png)
 Click to link provided by it to open gradio site with GUI. Supports GFPGAN to fix faces and upscale.
@@ -9,29 +10,43 @@ Click to link provided by it to open gradio site with GUI. Supports GFPGAN to fi
 
 
 
-Based on https://github.com/harubaru/waifu-diffusion/
+Based on https://github.com/harubaru/waifu-diffusion/ and https://rentry.org/kretard
+
 Now with weighted prompts support from https://github.com/lstein/stable-diffusion#weighted-prompts
 
 # Hosting local gradio app with huge improvments and modifications:
 
-First, install this repo and all requirements like original (english guide with weak gradio app https://rentry.org/kretard), then install https://github.com/TencentARC/GFPGAN by
+First, install [conda](https://conda.io/) and then type in terminal:
 ```
-git clone https://github.com/TencentARC/GFPGAN
-pip install basicsr facexlib yapf lmdb opencv-python pyyaml tb-nightly --no-deps
-python setup.py develop 
-pip install realesrgan
+conda env create -f environment.yaml
+conda activate ldm
 ```
-
+Download sd 1.4 weights from https://huggingface.co/CompVis/stable-diffusion-v-1-4-original
 And download GFPGAN weights https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.3.pth to same directoy as stable diffusion weights (waifu-diffusion-gradio-hosted-by-colab/models/ldm/stable-diffusion-v1/)
 
-Finnaly, run 
+Finnaly, run this and have fun (?):
+```
 python3 ./scripts/kdiff_local.py
+```
+
+# Локальный запуск (перевод):
+Сначала установите Миниконду с https://conda.io/ и запустите в терминале:
+```
+conda env create -f environment.yaml
+conda activate ldm
+```
+Скачайте весы модели отсюда https://huggingface.co/CompVis/stable-diffusion-v-1-4-original в папку waifu-diffusion-gradio-hosted-by-colab/models/ldm/stable-diffusion-v1/ и переименуйте в model.ckpt
+А так же, весы GFPGAN  https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.3.pth и переместите в ту же папку что и весы sd 1.4 (waifu-diffusion-gradio-hosted-by-colab/models/ldm/stable-diffusion-v1/)
+
+И наконец, запустите скрипт. Наслаждайтесь(?):
+```
+python3 ./scripts/kdiff_local.py
+```
+
 
 ### Any questions? Come hop on by to them Discord server!
 
 [![Discord Server](https://discordapp.com/api/guilds/930499730843250783/widget.png?style=banner2)](https://discord.gg/Sx6Spmsgx7)
-
-All thanks goes to CompVis and Stability AI for releasing this codebase! Pretrained models coming soon...
 
 # Stable Diffusion
 *Stable Diffusion was made possible thanks to a collaboration with [Stability AI](https://stability.ai/) and [Runway](https://runwayml.com/) and builds upon our previous work:*
