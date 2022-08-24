@@ -25,7 +25,7 @@ pip install realesrgan
 And download GFPGAN weights https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.3.pth to same directoy as stable diffusion weights (waifu-diffusion-gradio-hosted-by-colab/models/ldm/stable-diffusion-v1/)
 
 Finnaly, run 
-!python3 ./scripts/kdiff_local.py
+python3 ./scripts/kdiff_local.py
 
 ### Any questions? Come hop on by to them Discord server!
 
