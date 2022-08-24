@@ -239,7 +239,7 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
     parser.add_argument(
         "--ckpt",
         type=str,
-        default="/gdrive/My Drive/model.ckpt\model.ckpt",
+        default="/gdrive/My Drive/model.ckpt",
         help="path to checkpoint of model",
     )
     parser.add_argument(
