@@ -165,12 +165,6 @@ def split_weighted_subprompts(text):
         return prompts, weights
 
 
-config = OmegaConf.load("configs/stable-diffusion/v1-inference.yaml")
-model = load_model_from_config(config, "./models/ldm/stable-diffusion-v1/model.ckpt")
-
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-model = model.half().to(device)
-
 
 def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, ddim_eta: float, n_iter: int, n_samples: int, cfg_scales: str, denoising_strength: float, seed: int, height: int, width: int, same_seed: bool, GFPGAN: bool, bg_upsampling: bool, upscale: int):
     torch.cuda.empty_cache()
@@ -239,7 +233,7 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
     parser.add_argument(
         "--ckpt",
         type=str,
-        default="./models/ldm/stable-diffusion-v1/model.ckpt",
+        default="./models/ldm/stable-diffusion-v1/model-pruned.ckpt",
         help="path to checkpoint of model",
     )
     parser.add_argument(
@@ -398,9 +392,6 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
                 gc.collect()
                 torch.cuda.empty_cache() 
     del sampler
-    
-    
-    
     f = []
     message = ''
     for i in range(len(output_images)):
@@ -424,13 +415,19 @@ def dev_dream(prompt: str, init_img,use_img: bool, ddim_steps: int, plms: bool, 
     prompts = list(map(str, prompt.split('|'))) 
     if not use_img:
         init_img=None
-    f, rng_seed, message = []
+    f, rng_seed, message = [], [], []
     for prompt in prompts:
         ff, rng_seedf, messagef = dream(prompt, init_img, ddim_steps, plms, fixed_code, ddim_eta, n_iter, n_samples, cfg_scales, denoising_strength, seed, height, width, same_seed, GFPGAN, bg_upsampling, upscale)
         f.append(ff)
         rng_seed.append(rng_seedf)
         messagef.append(messagef)
     return f, rng_seed, message
+
+config = OmegaConf.load("configs/stable-diffusion/v1-inference.yaml")
+model = load_model_from_config(config, "./models/ldm/stable-diffusion-v1/model-pruned.ckpt")
+
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+model = model.half().to(device)
 
 
 
