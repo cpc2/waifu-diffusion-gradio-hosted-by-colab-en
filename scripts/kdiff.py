@@ -181,7 +181,7 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
         type=str,
         nargs="?",
         help="dir to write results to",
-        default="/content/"
+        default="/gdrive/My Drive/GradIO_out/"
     )
 
     parser.add_argument(
@@ -328,11 +328,11 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
                         output_images[-1].append(aaa)
                         output_images[-1].append(prompts[0])
 
-                        os.makedirs(f'/content/{aaa}', exist_ok=True)
+                        os.makedirs(f'/gdrive/My Drive/GradIO_out/{aaa}', exist_ok=True)
                         for n in trange(n_iter, desc="Sampling", disable=not accelerator.is_main_process):
                             
                             
-                            with open(f'/content/{aaa}/prompt.txt', 'w') as f:
+                            with open(f'/gdrive/My Drive/GradIO_out/{aaa}/prompt.txt', 'w') as f:
                                 f.write(prompts[0])
                             
                             if n_iter > 1: seedit += 1
@@ -405,10 +405,10 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
     message = ''
     for i in range(len(output_images)):
         aaa = output_images[i][0]
-        message+= f'Запрос "{output_images[i][1]}" находится в папке /content/{aaa}/ \n'
+        message+= f'Request "{output_images[i][1]}" was saved to Drive folder: {aaa}/ \n'
         for k in range(2, len(output_images[i])):
             cfg=cfg_scales
-            pt = f'/content/{aaa}/{k-2}.jpg'
+            pt = f'/gdrive/My Drive/GradIO_out/{aaa}/{k-2}.jpg'
             if GFPGAN:
                 (Image.fromarray(FACE_RESTORATION(output_images[i][k], bg_upsampling, upscale).astype(np.uint8))).save(pt, format = 'JPEG', optimize = True)
             else:
@@ -435,31 +435,31 @@ def dev_dream(prompt: str, init_img,use_img: bool, ddim_steps: int, plms: bool, 
 dream_interface = gr.Interface(
     dream,
     inputs=[
-        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),        
-        gr.Variable(value=None, visible=False),
-        gr.Slider(minimum=1, maximum=200, step=1, label="Шаги диффузии, идеал - 100.", value=50),
-        gr.Checkbox(label='Включить PLMS ', value=True),
-        gr.Checkbox(label='Сэмплинг с одной точки', value=False),
+        gr.Textbox(label='Prompt',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),        
+	gr.Variable(value=None, visible=False),
+        gr.Slider(minimum=1, maximum=200, step=1, label="Steps", value=50),
+        gr.Checkbox(label='PLMS ', value=False),
+        gr.Checkbox(label='Sampling from one point', value=False),
         gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label="DDIM ETA", value=0.0, visible=False),
-        gr.Slider(minimum=1, maximum=50, step=1, label='Сколько раз сгенерировать по запросу (последовательно)', value=1),
-        gr.Slider(minimum=1, maximum=8, step=1, label='Сколько картинок за раз (одновременно). ЖРЕТ МНОГО ПАМЯТИ', value=1),
-        gr.Textbox(placeholder="7.0", label='Classifier Free Guidance Scales,  через пробел либо только одна. Если больше одной, сэмплит один и тот же запрос с разными cfg. Обязательно число с точкой, типа 7.0 или 15.0', lines=1, value=9.0),
+        gr.Slider(minimum=1, maximum=50, step=1, label='Iterations (How many times to run)', value=1),
+        gr.Slider(minimum=1, maximum=8, step=1, label='Samples', value=1),
+        gr.Textbox(placeholder="7.0", label='Classifier Free Guidance Scale, floating point, e.g. 7.0', lines=1, value=7.0),
         gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label='Процент шагов, указанных выше чтобы пройтись по картинке. Моюно считать "силой"', value=0.75, visible=False),
-        gr.Number(label='Сид', value=-1),
+        gr.Number(label='Seed', value=-1),
         gr.Slider(minimum=64, maximum=2048, step=64, label="Высота", value=512),
         gr.Slider(minimum=64, maximum=2048, step=64, label="Ширина", value=512),
-        gr.Checkbox(label='Один и тот же сид каждый раз. Для того чтобы генерировать одно и тоже с одинаковым запросом.', value=False),
-        gr.Checkbox(label='GFPGAN, восстанавливает лица, может апскейлить. Все настройки ниже к нему.', value=True),
-        gr.Checkbox(label='Улучшение фона', value=True),
-        gr.Slider(minimum=1, maximum=8, step=1, label="Апскейлинг. 1 значит не используется.", value=2)
+        gr.Checkbox(label='Use Same Seed', value=False),
+        gr.Checkbox(label='GFPGAN, Face Resto, Upscale', value=False),
+        gr.Checkbox(label='BG Enhancement', value=False),
+        gr.Slider(minimum=1, maximum=8, step=1, label="Upscaler, 1 to turn off", value=1)
     ],
     outputs=[
         gr.Gallery(),
         gr.Number(label='Seed'),
-        gr.Textbox(label='Чтобы скачать папку с результатами, открой в левой части колаба файлы и скачай указанные папки')
+        gr.Textbox(label='Saved to Drive')
     ],
     title="Stable Diffusion 1.4 текст в картинку",
-    description="             создай картинку из текста, анон, K-LMS используется по умолчанию",
+    description="             ",
 )
 
 # prompt, init_img, ddim_steps, plms, ddim_eta, n_iter, n_samples, cfg_scale, denoising_strength, seed
@@ -467,55 +467,55 @@ dream_interface = gr.Interface(
 img2img_interface = gr.Interface(
     dream,
     inputs=[
-        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),
+        gr.Textbox(label='Prompt',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),
         gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
-        gr.Slider(minimum=1, maximum=200, step=1, label="Шаги диффузии, идеал - 100.", value=100),
-        gr.Checkbox(label='Включить PLMS ', value=True, vivible=False),
+        gr.Slider(minimum=1, maximum=200, step=1, label="Steps", value=100),
+        gr.Checkbox(label='PLMS ', value=True, visible=True),
         gr.Checkbox(label='Сэмплинг с одной точки', value=False, vivible=False),
         gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label="DDIM ETA", value=0.0, visible=False),
-        gr.Slider(minimum=1, maximum=50, step=1, label='Сколько раз сгенерировать по запросу (последовательно)', value=1),
-        gr.Slider(minimum=1, maximum=8, step=1, label='Сколько картинок за раз (одновременно). ЖРЕТ МНОГО ПАМЯТИ', value=1),
-        gr.Textbox(placeholder="7.0", label='Classifier Free Guidance Scales,  через пробел либо только одна. Если больше одной, сэмплит один и тот же запрос с разными cfg. Обязательно число с точкой, типа 7.0 или 15.0', lines=1, value=9.0),
-        gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label='Процент шагов, указанных выше чтобы пройтись по картинке. Моюно считать "силой"', value=0.75),
-        gr.Number(label='Сид', value=-1),
+        gr.Slider(minimum=1, maximum=50, step=1, label='Iterations', value=1),
+        gr.Slider(minimum=1, maximum=8, step=1, label='Samples', value=1),
+        gr.Textbox(placeholder="7.0", label='Classifier Free Guidance Scale, Floating number, e.g. 7.0', lines=1, value=9.0),
+        gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label='Strength of AI', value=0.75),
+        gr.Number(label='Seed', value=-1),
         gr.Slider(minimum=64, maximum=2048, step=64, label="Resize Height", value=512),
         gr.Slider(minimum=64, maximum=2048, step=64, label="Resize Width", value=512),
-        gr.Checkbox(label='Один и тот же сид каждый раз. Для того чтобы генерировать одно и тоже с одинаковым запросом.', value=False),
-        gr.Checkbox(label='GFPGAN, восстанавливает лица, может апскейлить. Все настройки ниже к нему.', value=True),
-        gr.Checkbox(label='Улучшение фона', value=True),
-        gr.Slider(minimum=1, maximum=8, step=1, label="Апскейлинг. 1 значит не используется.", value=2)
+        gr.Checkbox(label='Use Same Seed', value=False),
+        gr.Checkbox(label='GFPGAN, Face Resto, Upscale', value=False),
+        gr.Checkbox(label='BG Enhancement', value=False),
+        gr.Slider(minimum=1, maximum=8, step=1, label="Upscaler, 1 to turn off", value=1)
 
     ],
     outputs=[
         gr.Gallery(),
         gr.Number(label='Seed'),
-        gr.Textbox(label='Чтобы скачать папку с результатами, открой в левой части колаба файлы и скачай указанные папки')
+        gr.Textbox(label='Saved to Drive')
     ],
     title="Stable Diffusion Image-to-Image",
-    description="генерация изображения из изображения",
+    description="",
 )
 
 ctrbbl_interface = gr.Interface(
     dev_dream,
     inputs=[
-        gr.Textbox(label='Текстовые запросы разраниченные символом "|". Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),
+        gr.Textbox(label='Prompt',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),
         gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
-        gr.Checkbox(label='Использовать img2img (выключенно, значит картинка игнорируется) ', value=False, vivible=True),
-        gr.Slider(minimum=1, maximum=200, step=1, label="Шаги диффузии, идеал - 100.", value=100),
-        gr.Checkbox(label='Включить PLMS ', value=True, vivible=True),
-        gr.Checkbox(label='Сэмплинг с одной точки', value=False, vivible=True),
-        gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label="DDIM ETA", value=0.0, visible=True),
-        gr.Slider(minimum=1, maximum=50, step=1, label='Сколько раз сгенерировать по запросу (последовательно)', value=1),
-        gr.Slider(minimum=1, maximum=8, step=1, label='Сколько картинок за раз (одновременно). ЖРЕТ МНОГО ПАМЯТИ', value=1),
-        gr.Textbox(placeholder="7.0", label='Classifier Free Guidance Scales,  через пробел либо только одна. Если больше одной, сэмплит один и тот же запрос с разными cfg. Обязательно число с точкой, типа 7.0 или 15.0', lines=1, value=9.0),
-        gr.Slider(minimum=0.0, maximumx=1.0, step=0.01, label='Процент шагов, указанных выше чтобы пройтись по картинке. Можно считать "силой" (игнорируется при text2img', value=0.75),
-        gr.Number(label='Сид', value=-1),
+	gr.Checkbox(label='Use img2img, off is txt2img ', value=False, visible=True),
+        gr.Slider(minimum=1, maximum=200, step=1, label="Steps", value=100),
+        gr.Checkbox(label='PLMS ', value=True, visible=True),
+        gr.Checkbox(label='Сэмплинг с одной точки', value=False, vivible=False),
+        gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label="DDIM ETA", value=0.0, visible=False),
+        gr.Slider(minimum=1, maximum=50, step=1, label='Iterations', value=1),
+        gr.Slider(minimum=1, maximum=8, step=1, label='Samples', value=1),
+        gr.Textbox(placeholder="7.0", label='Classifier Free Guidance Scale, Floating number, e.g. 7.0', lines=1, value=9.0),
+        gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label='Strength of AI', value=0.75),
+        gr.Number(label='Seed', value=-1),
         gr.Slider(minimum=64, maximum=2048, step=64, label="Resize Height", value=512),
         gr.Slider(minimum=64, maximum=2048, step=64, label="Resize Width", value=512),
-        gr.Checkbox(label='Один и тот же сид каждый раз. Для того чтобы генерировать одно и тоже с одинаковым запросом.', value=False),
-        gr.Checkbox(label='GFPGAN, восстанавливает лица, может апскейлить. Все настройки ниже к нему.', value=True),
-        gr.Checkbox(label='Улучшение фона', value=True),
-        gr.Slider(minimum=1, maximum=8, step=1, label="Апскейлинг. 1 значит не используется.", value=2)
+        gr.Checkbox(label='Use Same Seed', value=False),
+        gr.Checkbox(label='GFPGAN, Face Resto, Upscale', value=False),
+        gr.Checkbox(label='BG Enhancement', value=False),
+        gr.Slider(minimum=1, maximum=8, step=1, label="Upscaler, 1 to turn off", value=1)
 
     ],
     outputs=[
@@ -532,4 +532,3 @@ ctrbbl_interface = gr.Interface(
 demo = gr.TabbedInterface(interface_list=[dream_interface, img2img_interface, ctrbbl_interface], tab_names=["Dream", "Image Translation", "Dev inference"])
 
 demo.launch(share=True)
-
