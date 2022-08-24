@@ -2,6 +2,7 @@
 https://colab.research.google.com/drive/18YLSgh5gGjjsilyeSH-fB65Ml9M-e_a6
 
 Only supports Russan language because it is. Without blakjack for this time.
+
 At the last cell 
 ![colab](assets/Colab.png)
 Click to link provided by it to open gradio site with GUI. Supports GFPGAN to fix faces and upscale.
