@@ -424,8 +424,7 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
 dream_interface = gr.Interface(
     dream,
     inputs=[
-        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен).',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),
-        gr.Variable(value=None, visible=False),
+        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),        gr.Variable(value=None, visible=False),
         gr.Slider(minimum=1, maximum=200, step=1, label="Шаги диффузии, идеал - 100.", value=50),
         gr.Checkbox(label='Включить PLMS ', value=True),
         gr.Checkbox(label='Сэмплинг с одной точки', value=False),
@@ -456,8 +455,7 @@ dream_interface = gr.Interface(
 img2img_interface = gr.Interface(
     dream,
     inputs=[
-        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен).',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),
-        gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
+        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),        gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
         gr.Slider(minimum=1, maximum=200, step=1, label="Шаги диффузии, идеал - 100.", value=100),
         gr.Checkbox(label='Включить PLMS ', value=True, vivible=False),
         gr.Checkbox(label='Сэмплинг с одной точки', value=False, vivible=False),
@@ -487,8 +485,7 @@ img2img_interface = gr.Interface(
 ctrbbl_interface = gr.Interface(
     dream,
     inputs=[
-        gr.Textbox(placeholder="A fantasy landscape, trending on artstation.", lines=1),
-        gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
+        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),        gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
         gr.Slider(minimum=1, maximum=200, step=1, label="Шаги диффузии, идеал - 100.", value=100),
         gr.Checkbox(label='Включить PLMS ', value=True, vivible=False),
         gr.Checkbox(label='Сэмплинг с одной точки', value=False, vivible=False),
