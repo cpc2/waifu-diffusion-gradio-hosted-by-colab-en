@@ -444,10 +444,10 @@ dream_interface = gr.Interface(
         gr.Slider(minimum=1, maximum=50, step=1, label='Iterations (How many times to run)', value=1),
         gr.Slider(minimum=1, maximum=8, step=1, label='Samples', value=1),
         gr.Textbox(placeholder="7.0", label='Classifier Free Guidance Scale, floating point, e.g. 7.0', lines=1, value=7.0),
-        gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label='Процент шагов, указанных выше чтобы пройтись по картинке. Моюно считать "силой"', value=0.75, visible=False),
+        gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label='Image strength', value=0.75, visible=True),
         gr.Number(label='Seed', value=-1),
-        gr.Slider(minimum=64, maximum=2048, step=64, label="Высота", value=512),
-        gr.Slider(minimum=64, maximum=2048, step=64, label="Ширина", value=512),
+        gr.Slider(minimum=64, maximum=2048, step=64, label="Height", value=512),
+        gr.Slider(minimum=64, maximum=2048, step=64, label="Width", value=512),
         gr.Checkbox(label='Use Same Seed', value=False),
         gr.Checkbox(label='GFPGAN, Face Resto, Upscale', value=False),
         gr.Checkbox(label='BG Enhancement', value=False),
@@ -521,10 +521,10 @@ ctrbbl_interface = gr.Interface(
     outputs=[
         gr.Gallery(),
         gr.Number(label='Seed'),
-        gr.Textbox(label='Чтобы скачать папку с результатами, открой в левой части колаба файлы и скачай указанные папки')
+        gr.Textbox(label='Image saved to Drive')
     ],
     title="Stable Diffusion multiprompt",
-    description="эксперементальная вкладка чтобы найти идеальные параметры",
+    description="",
 )
 
 
