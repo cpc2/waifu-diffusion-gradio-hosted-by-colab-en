@@ -415,13 +415,13 @@ def dev_dream(prompt: str, init_img,use_img: bool, ddim_steps: int, plms: bool, 
     prompts = list(map(str, prompt.split('|'))) 
     if not use_img:
         init_img=None
-    f, rng_seed, message = [], [], []
+    f, rng_seed, messagef = [], [], []
     for prompt in prompts:
         ff, rng_seedf, messagef = dream(prompt, init_img, ddim_steps, plms, fixed_code, ddim_eta, n_iter, n_samples, cfg_scales, denoising_strength, seed, height, width, same_seed, GFPGAN, bg_upsampling, upscale)
         f.append(ff)
         rng_seed.append(rng_seedf)
         messagef.append(messagef)
-    return f, rng_seed, message
+    return ff, rng_seedf, messagef
 
 config = OmegaConf.load("configs/stable-diffusion/v1-inference.yaml")
 model = load_model_from_config(config, "./models/ldm/stable-diffusion-v1/model-pruned.ckpt")
