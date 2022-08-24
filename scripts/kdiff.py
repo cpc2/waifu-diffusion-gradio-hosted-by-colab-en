@@ -6,7 +6,7 @@ import torch.nn as nn
 import numpy as np
 from omegaconf import OmegaConf
 from PIL import Image
-from tqdm.notebook import tqdm, trange
+from tqdm import tqdm, trange
 from itertools import islice
 from einops import rearrange, repeat
 from torchvision.utils import make_grid
@@ -47,7 +47,7 @@ def FACE_RESTORATION(image, bg_upsampling, upscale):
     arch = 'clean'
     channel_multiplier = 2
     model_name = 'GFPGANv1.3'
-    model_path = os.path.join('/content/GFPGAN/experiments/pretrained_models/GFPGANv1.3.pth')
+    model_path = os.path.join('./models/ldm/stable-diffusion-v1/GFPGANv1.3.pth')
     restorer = GFPGANer(
         model_path=model_path,
         upscale=1,
@@ -165,12 +165,6 @@ def split_weighted_subprompts(text):
         return prompts, weights
 
 
-config = OmegaConf.load("configs/stable-diffusion/v1-inference.yaml")
-model = load_model_from_config(config, "/gdrive/My Drive/model.ckpt")
-
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-model = model.half().to(device)
-
 
 def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, ddim_eta: float, n_iter: int, n_samples: int, cfg_scales: str, denoising_strength: float, seed: int, height: int, width: int, same_seed: bool, GFPGAN: bool, bg_upsampling: bool, upscale: int):
     torch.cuda.empty_cache()
@@ -181,7 +175,7 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
         type=str,
         nargs="?",
         help="dir to write results to",
-        default="/content/"
+        default="./waifu-diffusion-main/outputs/txt2img-samples"
     )
 
     parser.add_argument(
@@ -239,7 +233,7 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
     parser.add_argument(
         "--ckpt",
         type=str,
-        default="/gdrive/My Drive/model.ckpt\model.ckpt",
+        default="./models/ldm/stable-diffusion-v1/model-pruned.ckpt",
         help="path to checkpoint of model",
     )
     parser.add_argument(
@@ -328,11 +322,11 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
                         output_images[-1].append(aaa)
                         output_images[-1].append(prompts[0])
 
-                        os.makedirs(f'/content/{aaa}', exist_ok=True)
+                        os.makedirs(f'./outputs/txt2img-samples/{aaa}', exist_ok=True)
                         for n in trange(n_iter, desc="Sampling", disable=not accelerator.is_main_process):
                             
                             
-                            with open(f'/content/{aaa}/prompt.txt', 'w') as f:
+                            with open(f'./outputs/txt2img-samples/{aaa}/prompt.txt', 'w') as f:
                                 f.write(prompts[0])
                             
                             if n_iter > 1: seedit += 1
@@ -398,17 +392,14 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
                 gc.collect()
                 torch.cuda.empty_cache() 
     del sampler
-    
-    
-    
     f = []
     message = ''
     for i in range(len(output_images)):
         aaa = output_images[i][0]
-        message+= f'Запрос "{output_images[i][1]}" находится в папке /content/{aaa}/ \n'
+        message+= f'Запрос "{output_images[i][1]}" находится в папке ./outputs/txt2img-samples/{aaa}/ \n'
         for k in range(2, len(output_images[i])):
             cfg=cfg_scales
-            pt = f'/content/{aaa}/{k-2}.jpg'
+            pt = f'./outputs/txt2img-samples/{aaa}/{k-2}.jpg'
             if GFPGAN:
                 (Image.fromarray(FACE_RESTORATION(output_images[i][k], bg_upsampling, upscale).astype(np.uint8))).save(pt, format = 'JPEG', optimize = True)
             else:
@@ -420,10 +411,27 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
     #files.download(f'/content/waifu-diffusion/outputs/img2img-samples/samples/0.jpg') #not working
     return f, rng_seed, message
 
+def dev_dream(prompt: str, init_img,use_img: bool, ddim_steps: int, plms: bool, fixed_code: bool, ddim_eta: float, n_iter: int, n_samples: int, cfg_scales: str, denoising_strength: float, seed: int, height: int, width: int, same_seed: bool, GFPGAN: bool, bg_upsampling: bool, upscale: int):
+    prompts = list(map(str, prompt.split('|'))) 
+    if not use_img:
+        init_img=None
+    for prompt in prompts:
+        f, rng_seed, message = dream(prompt, init_img, ddim_steps, plms, fixed_code, ddim_eta, n_iter, n_samples, cfg_scales, denoising_strength, seed, height, width, same_seed, GFPGAN, bg_upsampling, upscale)
+    return f, rng_seed, message
+
+config = OmegaConf.load("configs/stable-diffusion/v1-inference.yaml")
+model = load_model_from_config(config, "./models/ldm/stable-diffusion-v1/model-pruned.ckpt")
+
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+model = model.half().to(device)
+
+
+
 dream_interface = gr.Interface(
     dream,
     inputs=[
-        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),        gr.Variable(value=None, visible=False),
+        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),        
+        gr.Variable(value=None, visible=False),
         gr.Slider(minimum=1, maximum=200, step=1, label="Шаги диффузии, идеал - 100.", value=50),
         gr.Checkbox(label='Включить PLMS ', value=True),
         gr.Checkbox(label='Сэмплинг с одной точки', value=False),
@@ -454,7 +462,8 @@ dream_interface = gr.Interface(
 img2img_interface = gr.Interface(
     dream,
     inputs=[
-        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),        gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
+        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),
+        gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
         gr.Slider(minimum=1, maximum=200, step=1, label="Шаги диффузии, идеал - 100.", value=100),
         gr.Checkbox(label='Включить PLMS ', value=True, vivible=False),
         gr.Checkbox(label='Сэмплинг с одной точки', value=False, vivible=False),
@@ -482,17 +491,19 @@ img2img_interface = gr.Interface(
 )
 
 ctrbbl_interface = gr.Interface(
-    dream,
+    dev_dream,
     inputs=[
-        gr.Textbox(label='Текстовый запрос. Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),        gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
+        gr.Textbox(label='Текстовые запросы разраниченные символом "|". Поддерживает придание частям запроса веса с помощью ":число " (пробел после числа обязателен). Обычный запрос так же поддерживается.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),
+        gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
+        gr.Checkbox(label='Использовать img2img (выключенно, значит картинка игнорируется) ', value=False, vivible=True),
         gr.Slider(minimum=1, maximum=200, step=1, label="Шаги диффузии, идеал - 100.", value=100),
-        gr.Checkbox(label='Включить PLMS ', value=True, vivible=False),
-        gr.Checkbox(label='Сэмплинг с одной точки', value=False, vivible=False),
-        gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label="DDIM ETA", value=0.0, visible=False),
+        gr.Checkbox(label='Включить PLMS ', value=True, vivible=True),
+        gr.Checkbox(label='Сэмплинг с одной точки', value=False, vivible=True),
+        gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label="DDIM ETA", value=0.0, visible=True),
         gr.Slider(minimum=1, maximum=50, step=1, label='Сколько раз сгенерировать по запросу (последовательно)', value=1),
         gr.Slider(minimum=1, maximum=8, step=1, label='Сколько картинок за раз (одновременно). ЖРЕТ МНОГО ПАМЯТИ', value=1),
         gr.Textbox(placeholder="7.0", label='Classifier Free Guidance Scales,  через пробел либо только одна. Если больше одной, сэмплит один и тот же запрос с разными cfg. Обязательно число с точкой, типа 7.0 или 15.0', lines=1, value=9.0),
-        gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label='Процент шагов, указанных выше чтобы пройтись по картинке. Моюно считать "силой"', value=0.75),
+        gr.Slider(minimum=0.0, maximumx=1.0, step=0.01, label='Процент шагов, указанных выше чтобы пройтись по картинке. Можно считать "силой" (игнорируется при text2img', value=0.75),
         gr.Number(label='Сид', value=-1),
         gr.Slider(minimum=64, maximum=2048, step=64, label="Resize Height", value=512),
         gr.Slider(minimum=64, maximum=2048, step=64, label="Resize Width", value=512),
@@ -507,8 +518,8 @@ ctrbbl_interface = gr.Interface(
         gr.Number(label='Seed'),
         gr.Textbox(label='Чтобы скачать папку с результатами, открой в левой части колаба файлы и скачай указанные папки')
     ],
-    title="Stable Diffusion Imagewegwsg-to-Image",
-    description="генерация изображения из изображения",
+    title="Stable Diffusion multiprompt",
+    description="эксперементальная вкладка чтобы найти идеальные параметры",
 )
 
 
