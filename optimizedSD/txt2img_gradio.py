@@ -35,7 +35,7 @@ def load_model_from_config(ckpt, verbose=False):
     return sd
 
 
-config = "scripts/v1-inference.yaml"
+config = "optimizedSD/v1-inference.yaml"
 ckpt = "/gdrive/My Drive/model.ckpt"
 sd = load_model_from_config(f"{ckpt}")
 li, lo = [], []
