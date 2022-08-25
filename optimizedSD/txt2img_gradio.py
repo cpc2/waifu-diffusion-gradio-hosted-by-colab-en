@@ -35,8 +35,8 @@ def load_model_from_config(ckpt, verbose=False):
     return sd
 
 
-config = "optimizedSD/v1-inference.yaml"
-ckpt = "models/ldm/stable-diffusion-v1/model.ckpt"
+config = "scripts/v1-inference.yaml"
+ckpt = "/gdrive/My Drive/model.ckpt"
 sd = load_model_from_config(f"{ckpt}")
 li, lo = [], []
 for key, v_ in sd.items():
@@ -174,7 +174,7 @@ def generate(prompt,ddim_steps,n_iter, batch_size, Height, Width, scale, seed, s
 demo = gr.Interface(
     fn=generate,
     inputs=["text",gr.Slider(1, 1000,value=50),gr.Slider(1, 100, step=1), gr.Slider(1, 100,step=1),
-    gr.Slider(64,4096,value = 512,step=64), gr.Slider(64,4096,value = 512,step=64), gr.Slider(0,50,value=7.5,step=0.1),"text","checkbox", "checkbox",gr.Text(value = "outputs/txt2img-samples")],
+    gr.Slider(64,4096,value = 512,step=64), gr.Slider(64,4096,value = 512,step=64), gr.Slider(0,50,value=7.5,step=0.1),"text","checkbox", "checkbox",gr.Text(value = "/gdrive/My Drive/GradIO_out/")],
     outputs=["image", "text"],
 )
-demo.launch()
+demo.launch(share=True)
