@@ -172,17 +172,11 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 model = model.half().to(device)
 
 
-def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, ddim_eta: float, n_iter: int, n_samples: int, cfg_scales: str, denoising_strength: float, seed: int, height: int, width: int, same_seed: bool, GFPGAN: bool, bg_upsampling: bool, upscale: int):
+def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, ddim_eta: float, n_iter: int, n_samples: int, cfg_scales: str, denoising_strength: float, seed: int, height: int, width: int, same_seed: bool, GFPGAN: bool, bg_upsampling: bool, upscale: int, outdir: str):
     torch.cuda.empty_cache()
     parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        "--outdir",
-        type=str,
-        nargs="?",
-        help="dir to write results to",
-        default="/gdrive/My Drive/GradIO_out/"
-    )
+
 
     parser.add_argument(
         "--skip_grid",
@@ -484,12 +478,13 @@ img2img_interface = gr.Interface(
         gr.Checkbox(label='GFPGAN, Face Resto, Upscale', value=False),
         gr.Checkbox(label='BG Enhancement', value=False),
         gr.Slider(minimum=1, maximum=8, step=1, label="Upscaler, 1 to turn off", value=1)
+        gr.Textbox(label='Save Dir:', lines=1, value='/content/gdrive/My Drive/GradIO_out/')
 
     ],
     outputs=[
         gr.Gallery(),
         gr.Number(label='Seed'),
-        gr.Textbox(label='Saved to Drive')
+        gr.Textbox(label=f'Saved to {outdir}')
     ],
     title="Stable Diffusion Image-to-Image",
     description="",
