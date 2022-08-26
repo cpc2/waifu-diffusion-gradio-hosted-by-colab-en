@@ -260,8 +260,8 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
     model_wrap = K.external.CompVisDenoiser(model)
     sigma_min, sigma_max = model_wrap.sigmas[0].item(), model_wrap.sigmas[-1].item()
 
-    os.makedirs(opt.outdir, exist_ok=True)
-    outpath = opt.outdir
+    os.makedirs(outdir, exist_ok=True)
+    outpath = outdir
 
     batch_size = n_samples
     n_rows = opt.n_rows if opt.n_rows > 0 else batch_size
