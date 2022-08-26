@@ -446,7 +446,7 @@ dream_interface = gr.Interface(
         gr.Checkbox(label='GFPGAN, Face Resto, Upscale', value=False),
         gr.Checkbox(label='BG Enhancement', value=False),
         gr.Slider(minimum=1, maximum=8, step=1, label="Upscaler, 1 to turn off", value=1),
-        gr.Textbox(label='Save Dir:', value = "/content/gdrive/My Drive/GradIO_out/")
+        gr.Textbox(label='Save Dir:', value = "/gdrive/My Drive/GradIO_out/")
 
     ],
     outputs=[
