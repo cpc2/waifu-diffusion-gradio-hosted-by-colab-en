@@ -322,11 +322,11 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
                         output_images[-1].append(aaa)
                         output_images[-1].append(prompts[0])
 
-                        os.makedirs(f'/gdrive/My Drive/GradIO_out/{aaa}', exist_ok=True)
+                        os.makedirs(f'{outdir}{aaa}', exist_ok=True)
                         for n in trange(n_iter, desc="Sampling", disable=not accelerator.is_main_process):
                             
                             
-                            with open(f'/gdrive/My Drive/GradIO_out/{aaa}/prompt.txt', 'w') as f:
+                            with open(f'{outdir}{aaa}/prompt.txt', 'w') as f:
                                 f.write(prompts[0])
                             
                             if n_iter > 1: seedit += 1
@@ -402,7 +402,7 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
         message+= f'Request "{output_images[i][1]}" was saved to Drive folder: {aaa}/ \n'
         for k in range(2, len(output_images[i])):
             cfg=cfg_scales
-            pt = f'/gdrive/My Drive/GradIO_out/{aaa}/{k-2}.jpg'
+            pt = f'{outdir}{aaa}/{k-2}.jpg'
             if GFPGAN:
                 (Image.fromarray(FACE_RESTORATION(output_images[i][k], bg_upsampling, upscale).astype(np.uint8))).save(pt, format = 'JPEG', optimize = True)
             else:
@@ -467,7 +467,7 @@ img2img_interface = gr.Interface(
         gr.Image(value="https://raw.githubusercontent.com/CompVis/stable-diffusion/main/assets/stable-samples/img2img/sketch-mountains-input.jpg", source="upload", interactive=True, type="pil"),
         gr.Slider(minimum=1, maximum=200, step=1, label="Steps", value=100),
         gr.Checkbox(label='PLMS ', value=True, visible=True),
-        gr.Checkbox(label='Сэмплинг с одной точки', value=False, vivible=False),
+        gr.Checkbox(label='Sample from one point', value=False, vivible=False),
         gr.Slider(minimum=0.0, maximum=1.0, step=0.01, label="DDIM ETA", value=0.0, visible=False),
         gr.Slider(minimum=1, maximum=50, step=1, label='Iterations', value=1),
         gr.Slider(minimum=1, maximum=8, step=1, label='Samples', value=1),
