@@ -445,7 +445,9 @@ dream_interface = gr.Interface(
         gr.Checkbox(label='Use Same Seed', value=False),
         gr.Checkbox(label='GFPGAN, Face Resto, Upscale', value=False),
         gr.Checkbox(label='BG Enhancement', value=False),
-        gr.Slider(minimum=1, maximum=8, step=1, label="Upscaler, 1 to turn off", value=1)
+        gr.Slider(minimum=1, maximum=8, step=1, label="Upscaler, 1 to turn off", value=1),
+        gr.Textbox(label='Save Dir:', value = "/content/gdrive/My Drive/GradIO_out/")
+
     ],
     outputs=[
         gr.Gallery(),
@@ -477,14 +479,13 @@ img2img_interface = gr.Interface(
         gr.Checkbox(label='Use Same Seed', value=False),
         gr.Checkbox(label='GFPGAN, Face Resto, Upscale', value=False),
         gr.Checkbox(label='BG Enhancement', value=False),
-        gr.Slider(minimum=1, maximum=8, step=1, label="Upscaler, 1 to turn off", value=1),
-        gr.Text(value = "/content/gdrive/My Drive/GradIO_out/")
+        gr.Slider(minimum=1, maximum=8, step=1, label="Upscaler, 1 to turn off", value=1)
 
     ],
     outputs=[
         gr.Gallery(),
         gr.Number(label='Seed'),
-        gr.Textbox(label=f'Saved to {outdir}')
+        gr.Textbox(label='Saved.')
     ],
     title="Stable Diffusion Image-to-Image",
     description="",
