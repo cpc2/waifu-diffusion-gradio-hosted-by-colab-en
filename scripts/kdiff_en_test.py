@@ -467,13 +467,13 @@ class StableDiffusionImg2ImgPipeline(DiffusionPipeline):
 
 MODEL_CACHE = "/content/diffusers-cache"
 
-pipe = StableDiffusionPipeline.from_pretrained(
-    model,
-    cache_dir=MODEL_CACHE,
-    revision="fp16",
-    torch_dtype=torch.float16,
+#pipe = StableDiffusionPipeline.from_pretrained(
+#    model,
+#    cache_dir=MODEL_CACHE,
+#    revision="fp16",
+#    torch_dtype=torch.float16,
 #    use_auth_token=False,
-    local_files_only=False,
+#    local_files_only=False,
 
 )
 
@@ -496,14 +496,14 @@ class Predictor(BasePredictor):
         scheduler = PNDMScheduler(
             beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear"
         )
-        self.pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
-            model,
-            scheduler=scheduler,
-            revision="fp16",
-            torch_dtype=torch.float16,
-            cache_dir=MODEL_CACHE,
-            local_files_only=False,
-        ).to("cuda")
+#        self.pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
+#            model,
+#            scheduler=scheduler,
+#            revision="fp16",
+#            torch_dtype=torch.float16,
+#            cache_dir=MODEL_CACHE,
+#            local_files_only=False,
+#        ).to("cuda")
 
         self.pipe.safety_checker = dummy
 
