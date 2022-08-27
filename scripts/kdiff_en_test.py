@@ -541,12 +541,13 @@ class Predictor(BasePredictor):
         )
 #        if output["nsfw_content_detected"]:
 #            raise Exception("NSFW content detected, please try a different prompt")
-#        os.makedirs(outdir, exist_ok=True)
-#        outpath = outdir
-#        aaa = seed
-#        randint = random.randint(0,9999999)
-#        pt = f'{outpath}/{aaa}_{randint}.jpg'
-#        output.save(pt, format = 'JPEG', optimize = True)
+        os.makedirs(outdir, exist_ok=True)
+        outpath = outdir
+        aaa = seed
+        randint = random.randint(0,9999999)
+        pt = f'{outpath}/{aaa}_{randint}.jpg'
+        output["sample"].save(pt, format = 'JPEG', optimize = True)
+        
         print(output["sample"])
         return output["sample"] #output_paths
 
