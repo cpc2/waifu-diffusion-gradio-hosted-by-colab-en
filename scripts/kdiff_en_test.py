@@ -45,9 +45,6 @@ import paddlehub as hub
 
 masking_model = hub.Module(name='U2Net')
 
-predictor = Predictor()
-predictor.setup()
-
 mimetypes.init()
 mimetypes.add_type('application/javascript', '.js')
 
@@ -369,7 +366,8 @@ class Predictor(BasePredictor):
 
         return output["sample"] #output_paths
 
-
+predictor = Predictor()
+predictor.setup()
 
 def infer(img, masking_option, prompt, width, height, prompt_strength, num_outputs, num_inference_steps, guidance_scale, seed):
 
