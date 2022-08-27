@@ -99,7 +99,7 @@ def infer(img, masking_option, prompt, width, height, prompt_strength, num_outpu
         init_image = img["image"]
         mask = img['mask']
 
-    images_list = predictor.predict(prompt, init_image, mask, width=width, height=height, prompt_strength=prompt_strength, num_outputs=num_outputs, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale, seed=seed, outdir=outdir)
+    images_list = predictor.predict(prompt, init_image, mask, outdir, width=width, height=height, prompt_strength=prompt_strength, num_outputs=num_outputs, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale, seed=seed)
 
 
     print(images_list)
@@ -513,7 +513,7 @@ class Predictor(BasePredictor):
     @torch.inference_mode()
     @torch.cuda.amp.autocast()
     def predict(
-        self, prompt, init_image, mask, width=512, height=512, prompt_strength=0.8, num_outputs=1, num_inference_steps=50, guidance_scale=7.5, seed=None, outdir):
+        self, prompt, init_image, mask, outdir, width=512, height=512, prompt_strength=0.8, num_outputs=1, num_inference_steps=50, guidance_scale=7.5, seed=None):
         """Run a single prediction on the model"""
         if seed is None:
             seed = int.from_bytes(os.urandom(2), "big")
