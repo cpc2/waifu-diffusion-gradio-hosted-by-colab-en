@@ -492,7 +492,7 @@ class Predictor(BasePredictor):
             revision="fp16",
             torch_dtype=torch.float16,
             cache_dir=MODEL_CACHE,
-            local_files_only=True,
+            local_files_only=False,
         ).to("cuda")
 
         self.pipe.safety_checker = dummy
