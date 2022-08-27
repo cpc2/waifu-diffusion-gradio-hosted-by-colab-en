@@ -82,7 +82,7 @@ def preprocess_mask(mask: Image, width: int, height: int):
     mask = torch.from_numpy(mask)
     return mask
 
-def infer(img, masking_option, prompt, width, height, prompt_strength, num_outputs, num_inference_steps, guidance_scale, seed):
+def infer(img, masking_option, prompt, width, height, prompt_strength, num_outputs, num_inference_steps, guidance_scale, seed, outdir: str):
 
     print(f'prompt: {prompt}')
     if masking_option == "automatic (U2net)":
@@ -100,6 +100,19 @@ def infer(img, masking_option, prompt, width, height, prompt_strength, num_outpu
         mask = img['mask']
 
     images_list = predictor.predict(prompt, init_image, mask, width=width, height=height, prompt_strength=prompt_strength, num_outputs=num_outputs, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale, seed=seed)
+
+    os.makedirs(outdir, exist_ok=True)
+    outpath = outdir
+
+    for i in range(len(images_list)):
+        aaa = images_list[i][0]
+        for k in range(2, len(images_list[i])):
+            pt = f'{outpath}/{aaa}/{k-2}.jpg'
+            images_list[i][k].save(pt, format = 'JPEG', optimize = True)
+#            f.append(pt)
+#            with Image.open(f[i]) as img:
+#                print(img.size)
+
 
     return images_list, mask
 
@@ -912,7 +925,8 @@ inpaint_interface = gr.Interface(
           gr.Radio(label="Number of images to output", choices=[1, 2, 3, 4, 5], value=1),
           gr.Slider(label="Number of denoising steps", minimum=1, maximum = 500, value=50),
           gr.Slider(label="Scale for classifier-free guidance", minimum=1.0, maximum = 20.0, value=7.5, step=0.5),
-          gr.Number(label="Seed", value=int(int.from_bytes(os.urandom(2), "big")), precision=0)
+          gr.Number(label="Seed", value=int(int.from_bytes(os.urandom(2), "big")), precision=0),
+          gr.Textbox(label='Save Dir:', value = "/gdrive/My Drive/GradIO_out/")
           ],
     outputs=[gr.Gallery(height='auto', label='Inpainted images'),
            gr.outputs.Image(type='pil', label='Mask')],
