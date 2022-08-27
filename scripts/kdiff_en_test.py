@@ -44,7 +44,7 @@ from abc import ABC, abstractmethod
 import paddlehub as hub
 
 masking_model = hub.Module(name='U2Net')
-os.makedirs("diffusers-cache", exist_ok=True)
+os.makedirs("/content/diffusers-cache", exist_ok=True)
 
 
 mimetypes.init()
@@ -464,7 +464,7 @@ class StableDiffusionImg2ImgPipeline(DiffusionPipeline):
 
         return text_embeddings
 
-MODEL_CACHE = "diffusers-cache"
+MODEL_CACHE = "/content/diffusers-cache"
 
 
 class BasePredictor(ABC):
