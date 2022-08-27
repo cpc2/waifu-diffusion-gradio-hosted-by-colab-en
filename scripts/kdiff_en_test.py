@@ -104,7 +104,8 @@ def infer(img, masking_option, prompt, width, height, prompt_strength, num_outpu
     os.makedirs(outdir, exist_ok=True)
     outpath = outdir
     aaa = seed
-    pt = f'{outpath}/{aaa}/{k-2}.jpg'
+    randint = random.randint(0,9999999)
+    pt = f'{outpath}/{aaa}_{randint}.jpg'
     images_list.save(pt, format = 'JPEG', optimize = True)
 
     return images_list, mask
