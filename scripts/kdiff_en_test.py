@@ -322,7 +322,7 @@ class Predictor(BasePredictor):
             beta_start=0.00085, beta_end=0.012, beta_schedule="scaled_linear"
         )
         self.pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
-            model_id,
+            model,
             scheduler=scheduler,
             revision="fp16",
             torch_dtype=torch.float16,
