@@ -468,7 +468,7 @@ class StableDiffusionImg2ImgPipeline(DiffusionPipeline):
 MODEL_CACHE = "/content/diffusers-cache"
 
 pipe = StableDiffusionPipeline.from_pretrained(
-    model_id,
+    model,
     cache_dir="/content/diffusers-cache",
     revision="fp16",
     torch_dtype=torch.float16,
