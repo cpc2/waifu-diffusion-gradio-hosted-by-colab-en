@@ -910,6 +910,6 @@ inpaint_interface = gr.Interface{
 }
 
 
-demo = gr.TabbedInterface(interface_list=[dream_interface, img2img_interface, ctrbbl_interface], tab_names=["Dream", "Image Translation", "Dev inference"])
+demo = gr.TabbedInterface(interface_list=[dream_interface, img2img_interface, inpaint_interface, ctrbbl_interface], tab_names=["Dream", "Image Translation", "Inpaint Interface", "Dev inference"])
 
 demo.launch(share=True)
