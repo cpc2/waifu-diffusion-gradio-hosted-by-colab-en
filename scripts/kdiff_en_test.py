@@ -472,7 +472,7 @@ pipe = StableDiffusionPipeline.from_pretrained(
     cache_dir="/content/diffusers-cache",
     revision="fp16",
     torch_dtype=torch.float16,
-    use_auth_token=True,
+    use_auth_token=False,
 )
 
 class BasePredictor(ABC):
