@@ -475,7 +475,7 @@ MODEL_CACHE = "/content/diffusers-cache"
 #    use_auth_token=False,
 #    local_files_only=False,
 
-)
+#)
 
 class BasePredictor(ABC):
     def setup(self) -> None:
