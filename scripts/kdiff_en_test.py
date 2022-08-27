@@ -548,7 +548,7 @@ class Predictor(BasePredictor):
         for i in range(len(output)):
 #            aaa = output[i][0]
 
-            cfg=cfg_scales
+#            cfg=cfg_scales
             pt = f'{outpath}/{aaa}.jpg'
 
             output[i].save(pt, format = 'JPEG', optimize = True)
