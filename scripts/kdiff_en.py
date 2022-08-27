@@ -479,7 +479,8 @@ img2img_interface = gr.Interface(
         gr.Checkbox(label='Use Same Seed', value=False),
         gr.Checkbox(label='GFPGAN, Face Resto, Upscale', value=False),
         gr.Checkbox(label='BG Enhancement', value=False),
-        gr.Slider(minimum=1, maximum=8, step=1, label="Upscaler, 1 to turn off", value=1)
+        gr.Slider(minimum=1, maximum=8, step=1, label="Upscaler, 1 to turn off", value=1),
+        gr.Textbox(label='Save Dir:', value = "/gdrive/My Drive/GradIO_out/")
 
     ],
     outputs=[
@@ -511,7 +512,7 @@ ctrbbl_interface = gr.Interface(
         gr.Checkbox(label='Use Same Seed', value=False),
         gr.Checkbox(label='GFPGAN, Face Resto, Upscale', value=False),
         gr.Checkbox(label='BG Enhancement', value=False),
-        gr.Slider(minimum=1, maximum=8, step=1, label="Upscaler, 1 to turn off", value=1)
+        gr.Slider(minimum=1, maximum=8, step=1, label="Upscaler, 1 to turn off", value=1),
 
     ],
     outputs=[
