@@ -467,15 +467,14 @@ class StableDiffusionImg2ImgPipeline(DiffusionPipeline):
 
 MODEL_CACHE = "/content/diffusers-cache"
 
-#pipe = StableDiffusionPipeline.from_pretrained(
-#    model,
-#    cache_dir=MODEL_CACHE,
-#    revision="fp16",
-#    torch_dtype=torch.float16,
+pipe = StableDiffusionPipeline.from_pretrained(
+    model,
+    cache_dir=MODEL_CACHE,
+    revision="fp16",
+    torch_dtype=torch.float16,
 #    use_auth_token=False,
 #    local_files_only=False,
-
-#)
+)
 
 class BasePredictor(ABC):
     def setup(self) -> None:
