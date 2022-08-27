@@ -45,7 +45,7 @@ import paddlehub as hub
 
 masking_model = hub.Module(name='U2Net')
 os.makedirs("/content/waifu-diffusion/diffusers-cache", exist_ok=True)
-model_id = "/content/waifu-diffusion/diffusers-cache/CompVis/stable-diffusion-v1-4"
+model_id = "CompVis/stable-diffusion-v1-4"
 device = "cuda"
 
 pipe = StableDiffusionPipeline.from_pretrained(
