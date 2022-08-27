@@ -888,7 +888,7 @@ ctrbbl_interface = gr.Interface(
     description="",
 )
 
-inpaint_interface = gr.Interface{
+inpaint_interface = gr.Interface(
     infer,
     inputs=[gr.Image(tool='sketch', label='Input', type='pil'),
           gr.inputs.Radio(choices=['automatic (U2net)', 'manual'], type='value', default='manual', label='Masking option'),
@@ -904,9 +904,9 @@ inpaint_interface = gr.Interface{
     outputs=[gr.Gallery(height='auto', label='Inpainted images'),
            gr.outputs.Image(type='pil', label='Mask')],
     title='SD Inpaint',
-    description=''
+    description="",
 
-}
+)
 
 
 demo = gr.TabbedInterface(interface_list=[dream_interface, img2img_interface, inpaint_interface, ctrbbl_interface], tab_names=["Dream", "Image Translation", "Inpaint Interface", "Dev inference"])
