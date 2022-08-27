@@ -469,10 +469,12 @@ MODEL_CACHE = "/content/diffusers-cache"
 
 pipe = StableDiffusionPipeline.from_pretrained(
     model,
-    cache_dir="/content/diffusers-cache",
+    cache_dir=MODEL_CACHE,
     revision="fp16",
     torch_dtype=torch.float16,
-    use_auth_token=False,
+#    use_auth_token=False,
+    local_files_only=True,
+
 )
 
 class BasePredictor(ABC):
