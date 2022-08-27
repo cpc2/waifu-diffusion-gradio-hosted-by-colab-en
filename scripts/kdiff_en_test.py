@@ -103,16 +103,9 @@ def infer(img, masking_option, prompt, width, height, prompt_strength, num_outpu
 
     os.makedirs(outdir, exist_ok=True)
     outpath = outdir
-
-    for i in range(len(images_list)):
-        aaa = seed
-        for k in range(2, len(images_list[i])):
-            pt = f'{outpath}/{aaa}/{k-2}.jpg'
-            images_list[i][k].save(pt, format = 'JPEG', optimize = True)
-#            f.append(pt)
-#            with Image.open(f[i]) as img:
-#                print(img.size)
-
+    aaa = seed
+    pt = f'{outpath}/{aaa}/{k-2}.jpg'
+    images_list.save(pt, format = 'JPEG', optimize = True)
 
     return images_list, mask
 
