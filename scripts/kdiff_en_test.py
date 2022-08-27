@@ -101,10 +101,12 @@ def infer(img, masking_option, prompt, width, height, prompt_strength, num_outpu
 
     images_list = predictor.predict(prompt, init_image, mask, outdir, width=width, height=height, prompt_strength=prompt_strength, num_outputs=num_outputs, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale, seed=seed)
 
+    os.makedirs(outdir, exist_ok=True)
+    outpath = outdir
     f = []
     message = ''
     for i in range(len(images_list)):
-        aaa = images_list[i][0]
+        aaa = seed
 #        message+= f'Request "{images_list[i][1]}" was saved to folder: {aaa}/ \n'
         for k in range(2, len(images_list[i])):
 #            cfg=cfg_scales
