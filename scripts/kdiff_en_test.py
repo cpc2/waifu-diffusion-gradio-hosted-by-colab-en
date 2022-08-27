@@ -936,7 +936,7 @@ inpaint_interface = gr.Interface(
           gr.Slider(label="Prompt strength", maximum = 1, value=0.6),
           gr.Radio(label="Number of images to output", choices=[1, 2, 3, 4, 5], value=1),
           gr.Slider(label="Number of denoising steps", minimum=1, maximum = 500, value=50),
-          gr.Slider(label="Scale for classifier-free guidance", minimum=1.0, maximum = 20.0, value=7.5, step=0.5),
+          gr.Slider(label="Scale for classifier-free guidance", minimum=7.0, maximum = 20.0, value=7.5, step=0.5),
           gr.Number(label="Seed", value=int(int.from_bytes(os.urandom(2), "big")), precision=0),
           gr.Checkbox(label='GFPGAN, Face Resto, Upscale', value=False),
           gr.Checkbox(label='BG Enhancement', value=False),
