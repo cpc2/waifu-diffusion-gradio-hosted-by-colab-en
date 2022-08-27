@@ -99,14 +99,9 @@ def infer(img, masking_option, prompt, width, height, prompt_strength, num_outpu
         init_image = img["image"]
         mask = img['mask']
 
-    images_list = predictor.predict(prompt, init_image, mask, width=width, height=height, prompt_strength=prompt_strength, num_outputs=num_outputs, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale, seed=seed)
+    images_list = predictor.predict(prompt, init_image, mask, width=width, height=height, prompt_strength=prompt_strength, num_outputs=num_outputs, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale, seed=seed, outdir=outdir)
 
-    os.makedirs(outdir, exist_ok=True)
-    outpath = outdir
-    aaa = seed
-    randint = random.randint(0,9999999)
-    pt = f'{outpath}/{aaa}_{randint}.jpg'
-    images_list.save(pt, format = 'JPEG', optimize = True)
+
 
     return images_list, mask
 
@@ -546,6 +541,12 @@ class Predictor(BasePredictor):
         )
 #        if output["nsfw_content_detected"]:
 #            raise Exception("NSFW content detected, please try a different prompt")
+        os.makedirs(outdir, exist_ok=True)
+        outpath = outdir
+        aaa = seed
+        randint = random.randint(0,9999999)
+        pt = f'{outpath}/{aaa}_{randint}.jpg'
+        output.save(pt, format = 'JPEG', optimize = True)
 
         return output["sample"] #output_paths
 
