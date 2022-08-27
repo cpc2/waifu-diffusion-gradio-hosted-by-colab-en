@@ -82,7 +82,7 @@ def preprocess_mask(mask: Image, width: int, height: int):
     mask = torch.from_numpy(mask)
     return mask
 
-def infer(img, masking_option, prompt, width, height, prompt_strength, num_outputs, num_inference_steps, guidance_scale, seed, outdir: str):
+def infer(img, masking_option, prompt, width, height, prompt_strength, num_outputs, num_inference_steps, guidance_scale, seed, GFPGAN: bool, bg_upsampling: bool, upscale: int, outdir: str):
 
     print(f'prompt: {prompt}')
     if masking_option == "automatic (U2net)":
@@ -113,7 +113,10 @@ def infer(img, masking_option, prompt, width, height, prompt_strength, num_outpu
 #            cfg=cfg_scales
         pt = f'{outpath}/{aaa}_{rand}_{i}.jpg'
 
-        images_list[i].save(pt, format = 'JPEG', optimize = True)
+        if GFPGAN:
+            (Image.fromarray(FACE_RESTORATION(images_list[i], bg_upsampling, upscale).astype(np.uint8))).save(pt, format = 'JPEG', optimize = True)
+        else:
+            images_list[i].save(pt, format = 'JPEG', optimize = True)
         f.append(pt)
         with Image.open(f[i]) as img:
             print(img.size)
@@ -935,6 +938,9 @@ inpaint_interface = gr.Interface(
           gr.Slider(label="Number of denoising steps", minimum=1, maximum = 500, value=50),
           gr.Slider(label="Scale for classifier-free guidance", minimum=1.0, maximum = 20.0, value=7.5, step=0.5),
           gr.Number(label="Seed", value=int(int.from_bytes(os.urandom(2), "big")), precision=0),
+          gr.Checkbox(label='GFPGAN, Face Resto, Upscale', value=False),
+          gr.Checkbox(label='BG Enhancement', value=False),
+          gr.Slider(minimum=1, maximum=8, step=1, label="Upscaler, 1 to turn off", value=1),
           gr.Textbox(label='Save Dir:', value = "/gdrive/My Drive/GradIO_out/")
           ],
     outputs=[gr.Gallery(height='auto', label='Inpainted images'),
