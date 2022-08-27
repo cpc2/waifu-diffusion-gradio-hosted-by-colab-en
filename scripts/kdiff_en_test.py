@@ -102,7 +102,7 @@ def infer(img, masking_option, prompt, width, height, prompt_strength, num_outpu
     images_list = predictor.predict(prompt, init_image, mask, width=width, height=height, prompt_strength=prompt_strength, num_outputs=num_outputs, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale, seed=seed, outdir=outdir)
 
 
-
+    print(images_list)
     return images_list, mask
 
 def FACE_RESTORATION(image, bg_upsampling, upscale):
