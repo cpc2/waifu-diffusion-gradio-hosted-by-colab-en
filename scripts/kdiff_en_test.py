@@ -44,6 +44,8 @@ from abc import ABC, abstractmethod
 import paddlehub as hub
 
 masking_model = hub.Module(name='U2Net')
+os.makedirs("diffusers-cache", exist_ok=True)
+
 
 mimetypes.init()
 mimetypes.add_type('application/javascript', '.js')
@@ -461,6 +463,9 @@ class StableDiffusionImg2ImgPipeline(DiffusionPipeline):
             text_embeddings = torch.cat([uncond_embeddings, text_embeddings])
 
         return text_embeddings
+
+MODEL_CACHE = "diffusers-cache"
+
 
 class BasePredictor(ABC):
     def setup(self) -> None:
