@@ -715,11 +715,11 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
                         output_images[-1].append(aaa)
                         output_images[-1].append(prompts[0])
 
-                        os.makedirs(f'{outpath}/{aaa}', exist_ok=True)
+#                        os.makedirs(f'{outpath}/{aaa}', exist_ok=True)
                         for n in trange(n_iter, desc="Sampling", disable=not accelerator.is_main_process):
 
 
-                            with open(f'{outpath}/{aaa}/prompt.txt', 'w') as f:
+                            with open(f'{outpath}/{aaa}_prompt.txt', 'w') as f:
                                 f.write(prompts[0])
 
                             if n_iter > 1: seedit += 1
@@ -792,10 +792,10 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
     message = ''
     for i in range(len(output_images)):
         aaa = output_images[i][0]
-        message+= f'Request "{output_images[i][1]}" was saved to folder: {aaa}/ \n'
+        message+= f'Request "{output_images[i][1]}" was saved to folder: {outpath}/ \n'
         for k in range(2, len(output_images[i])):
             cfg=cfg_scales
-            pt = f'{outpath}/{aaa}/{k-2}.jpg'
+            pt = f'{outpath}/{aaa}_{k-2}.jpg'
             if GFPGAN:
                 (Image.fromarray(FACE_RESTORATION(output_images[i][k], bg_upsampling, upscale).astype(np.uint8))).save(pt, format = 'JPEG', optimize = True)
             else:
