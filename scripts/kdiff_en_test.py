@@ -105,7 +105,7 @@ def infer(img, masking_option, prompt, width, height, prompt_strength, num_outpu
     outpath = outdir
 
     for i in range(len(images_list)):
-        aaa = images_list[i][0]
+        aaa = seed
         for k in range(2, len(images_list[i])):
             pt = f'{outpath}/{aaa}/{k-2}.jpg'
             images_list[i][k].save(pt, format = 'JPEG', optimize = True)
