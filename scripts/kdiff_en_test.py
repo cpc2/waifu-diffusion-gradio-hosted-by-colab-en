@@ -545,9 +545,17 @@ class Predictor(BasePredictor):
         outpath = outdir
         aaa = seed
         randint = random.randint(0,9999999)
-        pt = f'{outpath}/{aaa}_{randint}.jpg'
-        output["sample"].save(pt, format = 'JPEG', optimize = True)
-        
+        for i in range(len(output)):
+            aaa = output[i][0]
+            for k in range(2, len(output[i])):
+                cfg=cfg_scales
+                pt = f'{outpath}/{aaa}/{k-2}.jpg'
+
+                output[i][k].save(pt, format = 'JPEG', optimize = True)
+                f.append(pt)
+                with Image.open(f[i]) as img:
+                    print(img.size)
+
         print(output["sample"])
         return output["sample"] #output_paths
 
