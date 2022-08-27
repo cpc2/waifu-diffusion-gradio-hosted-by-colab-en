@@ -513,7 +513,7 @@ class Predictor(BasePredictor):
     @torch.inference_mode()
     @torch.cuda.amp.autocast()
     def predict(
-        self, prompt, init_image, mask, width=512, height=512, prompt_strength=0.8, num_outputs=1, num_inference_steps=50, guidance_scale=7.5, seed=None):
+        self, prompt, init_image, mask, width=512, height=512, prompt_strength=0.8, num_outputs=1, num_inference_steps=50, guidance_scale=7.5, seed=None, outdir):
         """Run a single prediction on the model"""
         if seed is None:
             seed = int.from_bytes(os.urandom(2), "big")
