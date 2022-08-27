@@ -547,13 +547,13 @@ class Predictor(BasePredictor):
         randint = random.randint(0,9999999)
         for i in range(len(output)):
 #            aaa = output[i][0]
-            for k in range(2, len(output[i])):
-                cfg=cfg_scales
-                pt = f'{outpath}/{aaa}.jpg'
 
-                output[i][k].save(pt, format = 'JPEG', optimize = True)
-                f.append(pt)
-                with Image.open(f[i]) as img:
+            cfg=cfg_scales
+            pt = f'{outpath}/{aaa}.jpg'
+
+            output[i].save(pt, format = 'JPEG', optimize = True)
+            f.append(pt)
+            with Image.open(f[i]) as img:
                     print(img.size)
 
         print(output["sample"])
