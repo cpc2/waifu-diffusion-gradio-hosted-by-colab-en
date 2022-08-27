@@ -101,6 +101,19 @@ def infer(img, masking_option, prompt, width, height, prompt_strength, num_outpu
 
     images_list = predictor.predict(prompt, init_image, mask, outdir, width=width, height=height, prompt_strength=prompt_strength, num_outputs=num_outputs, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale, seed=seed)
 
+    f = []
+    message = ''
+    for i in range(len(images_list)):
+        aaa = images_list[i][0]
+#        message+= f'Request "{images_list[i][1]}" was saved to folder: {aaa}/ \n'
+        for k in range(2, len(images_list[i])):
+#            cfg=cfg_scales
+            pt = f'{outpath}/{aaa}/{k-2}.jpg'
+
+            images_list[i][k].save(pt, format = 'JPEG', optimize = True)
+            f.append(pt)
+            with Image.open(f[i]) as img:
+                print(img.size)
 
     print(images_list)
     return images_list, mask
@@ -541,17 +554,7 @@ class Predictor(BasePredictor):
         )
 #        if output["nsfw_content_detected"]:
 #            raise Exception("NSFW content detected, please try a different prompt")
-        os.makedirs(outdir, exist_ok=True)
-        outpath = outdir
-        aaa = seed
-        randint = random.randint(0,9999999)
-        for i in range(len(output)):
-#            aaa = output[i][0]
 
-#            cfg=cfg_scales
-            pt = f'{outpath}/{aaa}.jpg'
-
-            output[i].save(pt)
 
         print(output["sample"])
         return output["sample"] #output_paths
