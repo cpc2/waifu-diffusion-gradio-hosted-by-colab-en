@@ -70,6 +70,166 @@ def preprocess_mask(mask: Image, width: int, height: int):
     mask = torch.from_numpy(mask)
     return mask
 
+def infer(img, masking_option, prompt, width, height, prompt_strength, num_outputs, num_inference_steps, guidance_scale, seed):
+
+    print(f'prompt: {prompt}')
+    if masking_option == "automatic (U2net)":
+        result = masking_model.Segmentation(
+            images=[cv2.cvtColor(np.array(img["image"]), cv2.COLOR_RGB2BGR)],
+            paths=None,
+            batch_size=1,
+            input_size=320,
+            output_dir='output',
+            visualization=True)
+        init_image = img["image"]
+        mask = Image.fromarray(result[0]['mask']) #Black pixels are inpainted and white pixels are preserved. Experimental feature, tends to work better with prompt strength of 0.5-0.7
+    else:
+        init_image = img["image"]
+        mask = img['mask']
+
+    images_list = predictor.predict(prompt, init_image, mask, width=width, height=height, prompt_strength=prompt_strength, num_outputs=num_outputs, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale, seed=seed)
+
+    return images_list, mask
+
+def FACE_RESTORATION(image, bg_upsampling, upscale):
+    from basicsr.archs.rrdbnet_arch import RRDBNet
+    from realesrgan import RealESRGANer
+    model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=2)
+    bg_upsampler = RealESRGANer(
+        scale=2,
+        model_path='https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth',
+        model=model,
+        tile=400,
+        tile_pad=10,
+        pre_pad=0,
+        half=True)
+    arch = 'clean'
+    channel_multiplier = 2
+    model_name = 'GFPGANv1.3'
+    model_path = os.path.join('/content/GFPGAN/experiments/pretrained_models/GFPGANv1.3.pth')
+    restorer = GFPGANer(
+        model_path=model_path,
+        upscale=1,
+        arch=arch,
+        channel_multiplier=channel_multiplier,
+        bg_upsampler=None
+        )
+
+    image=np.array(image)
+    input_img = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+    cropped_faces, restored_faces, restored_img = restorer.enhance(
+            input_img, has_aligned=False, only_center_face=False, paste_back=True)
+
+    image = cv2.cvtColor(restored_img, cv2.COLOR_BGR2RGB)
+    image = bg_upsampler.enhance(image, outscale=upscale)[0]
+    return image
+
+def chunk(it, size):
+    it = iter(it)
+    return iter(lambda: tuple(islice(it, size)), ())
+
+
+def load_model_from_config(config, ckpt, verbose=False):
+    print(f"Loading model from {ckpt}")
+    pl_sd = torch.load(ckpt, map_location="cpu")
+    if "global_step" in pl_sd:
+        print(f"Global Step: {pl_sd['global_step']}")
+    sd = pl_sd["state_dict"]
+    model = instantiate_from_config(config.model)
+    m, u = model.load_state_dict(sd, strict=False)
+    if len(m) > 0 and verbose:
+        print("missing keys:")
+        print(m)
+    if len(u) > 0 and verbose:
+        print("unexpected keys:")
+        print(u)
+
+    model.cuda()
+    model.eval()
+    return model
+
+def load_img_pil(img_pil):
+    image = img_pil.convert("RGB")
+    w, h = image.size
+    print(f"loaded input image of size ({w}, {h})")
+    w, h = map(lambda x: x - x % 64, (w, h))  # resize to integer multiple of 64
+    image = image.resize((w, h), resample=PIL.Image.LANCZOS)
+    print(f"cropped image to size ({w}, {h})")
+    image = np.array(image).astype(np.float32) / 255.0
+    image = image[None].transpose(0, 3, 1, 2)
+    image = torch.from_numpy(image)
+    return 2.*image - 1.
+
+def load_img(path):
+    return load_img_pil(Image.open(path))
+
+
+class CFGDenoiser(nn.Module):
+    def __init__(self, model):
+        super().__init__()
+        self.inner_model = model
+
+    def forward(self, x, sigma, uncond, cond, cond_scale):
+        x_in = torch.cat([x] * 2)
+        sigma_in = torch.cat([sigma] * 2)
+        cond_in = torch.cat([uncond, cond])
+        uncond, cond = self.inner_model(x_in, sigma_in, cond=cond_in).chunk(2)
+        return uncond + (cond - uncond) * cond_scale
+
+#from https://github.com/lstein/stable-diffusion/blob/main/ldm/simplet2i.py
+def split_weighted_subprompts(text):
+        """
+        grabs all text up to the first occurrence of ':'
+        uses the grabbed text as a sub-prompt, and takes the value following ':' as weight
+        if ':' has no value defined, defaults to 1.0
+        repeats until no text remaining
+        """
+        remaining = len(text)
+        prompts = []
+        weights = []
+        while remaining > 0:
+            if ":" in text:
+                idx = text.index(":") # first occurrence from start
+                # grab up to index as sub-prompt
+                prompt = text[:idx]
+                remaining -= idx
+                # remove from main text
+                text = text[idx+1:]
+                # find value for weight
+                if " " in text:
+                    idx = text.index(" ") # first occurence
+                else: # no space, read to end
+                    idx = len(text)
+                if idx != 0:
+                    try:
+                        weight = float(text[:idx])
+                    except: # couldn't treat as float
+                        print(f"Warning: '{text[:idx]}' is not a value, are you missing a space?")
+                        weight = 1.0
+                else: # no value found
+                    weight = 1.0
+                # remove from main text
+                remaining -= idx
+                text = text[idx+1:]
+                # append the sub-prompt and its weight
+                prompts.append(prompt)
+                weights.append(weight)
+            else: # no : found
+                if len(text) > 0: # there is still text though
+                    # take remainder as weight 1
+                    prompts.append(text)
+                    weights.append(1.0)
+                remaining = 0
+        return prompts, weights
+
+
+config = OmegaConf.load("configs/stable-diffusion/v1-inference.yaml")
+model = load_model_from_config(config, "/gdrive/My Drive/model.ckpt")
+
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+model = model.half().to(device)
+
 class StableDiffusionImg2ImgPipeline(DiffusionPipeline):
     """
     From https://github.com/huggingface/diffusers/pull/241
@@ -368,167 +528,6 @@ class Predictor(BasePredictor):
 
 predictor = Predictor()
 predictor.setup()
-
-def infer(img, masking_option, prompt, width, height, prompt_strength, num_outputs, num_inference_steps, guidance_scale, seed):
-
-    print(f'prompt: {prompt}')
-    if masking_option == "automatic (U2net)":
-        result = masking_model.Segmentation(
-            images=[cv2.cvtColor(np.array(img["image"]), cv2.COLOR_RGB2BGR)],
-            paths=None,
-            batch_size=1,
-            input_size=320,
-            output_dir='output',
-            visualization=True)
-        init_image = img["image"]
-        mask = Image.fromarray(result[0]['mask']) #Black pixels are inpainted and white pixels are preserved. Experimental feature, tends to work better with prompt strength of 0.5-0.7
-    else:
-        init_image = img["image"]
-        mask = img['mask']
-
-    images_list = predictor.predict(prompt, init_image, mask, width=width, height=height, prompt_strength=prompt_strength, num_outputs=num_outputs, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale, seed=seed)
-
-    return images_list, mask
-
-def FACE_RESTORATION(image, bg_upsampling, upscale):
-    from basicsr.archs.rrdbnet_arch import RRDBNet
-    from realesrgan import RealESRGANer
-    model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=2)
-    bg_upsampler = RealESRGANer(
-        scale=2,
-        model_path='https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth',
-        model=model,
-        tile=400,
-        tile_pad=10,
-        pre_pad=0,
-        half=True)
-    arch = 'clean'
-    channel_multiplier = 2
-    model_name = 'GFPGANv1.3'
-    model_path = os.path.join('/content/GFPGAN/experiments/pretrained_models/GFPGANv1.3.pth')
-    restorer = GFPGANer(
-        model_path=model_path,
-        upscale=1,
-        arch=arch,
-        channel_multiplier=channel_multiplier,
-        bg_upsampler=None
-        )
-
-    image=np.array(image)
-    input_img = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-
-    cropped_faces, restored_faces, restored_img = restorer.enhance(
-            input_img, has_aligned=False, only_center_face=False, paste_back=True)
-
-    image = cv2.cvtColor(restored_img, cv2.COLOR_BGR2RGB)
-    image = bg_upsampler.enhance(image, outscale=upscale)[0]
-    return image
-
-def chunk(it, size):
-    it = iter(it)
-    return iter(lambda: tuple(islice(it, size)), ())
-
-
-def load_model_from_config(config, ckpt, verbose=False):
-    print(f"Loading model from {ckpt}")
-    pl_sd = torch.load(ckpt, map_location="cpu")
-    if "global_step" in pl_sd:
-        print(f"Global Step: {pl_sd['global_step']}")
-    sd = pl_sd["state_dict"]
-    model = instantiate_from_config(config.model)
-    m, u = model.load_state_dict(sd, strict=False)
-    if len(m) > 0 and verbose:
-        print("missing keys:")
-        print(m)
-    if len(u) > 0 and verbose:
-        print("unexpected keys:")
-        print(u)
-
-    model.cuda()
-    model.eval()
-    return model
-
-def load_img_pil(img_pil):
-    image = img_pil.convert("RGB")
-    w, h = image.size
-    print(f"loaded input image of size ({w}, {h})")
-    w, h = map(lambda x: x - x % 64, (w, h))  # resize to integer multiple of 64
-    image = image.resize((w, h), resample=PIL.Image.LANCZOS)
-    print(f"cropped image to size ({w}, {h})")
-    image = np.array(image).astype(np.float32) / 255.0
-    image = image[None].transpose(0, 3, 1, 2)
-    image = torch.from_numpy(image)
-    return 2.*image - 1.
-
-def load_img(path):
-    return load_img_pil(Image.open(path))
-
-
-class CFGDenoiser(nn.Module):
-    def __init__(self, model):
-        super().__init__()
-        self.inner_model = model
-
-    def forward(self, x, sigma, uncond, cond, cond_scale):
-        x_in = torch.cat([x] * 2)
-        sigma_in = torch.cat([sigma] * 2)
-        cond_in = torch.cat([uncond, cond])
-        uncond, cond = self.inner_model(x_in, sigma_in, cond=cond_in).chunk(2)
-        return uncond + (cond - uncond) * cond_scale
-
-#from https://github.com/lstein/stable-diffusion/blob/main/ldm/simplet2i.py
-def split_weighted_subprompts(text):
-        """
-        grabs all text up to the first occurrence of ':'
-        uses the grabbed text as a sub-prompt, and takes the value following ':' as weight
-        if ':' has no value defined, defaults to 1.0
-        repeats until no text remaining
-        """
-        remaining = len(text)
-        prompts = []
-        weights = []
-        while remaining > 0:
-            if ":" in text:
-                idx = text.index(":") # first occurrence from start
-                # grab up to index as sub-prompt
-                prompt = text[:idx]
-                remaining -= idx
-                # remove from main text
-                text = text[idx+1:]
-                # find value for weight
-                if " " in text:
-                    idx = text.index(" ") # first occurence
-                else: # no space, read to end
-                    idx = len(text)
-                if idx != 0:
-                    try:
-                        weight = float(text[:idx])
-                    except: # couldn't treat as float
-                        print(f"Warning: '{text[:idx]}' is not a value, are you missing a space?")
-                        weight = 1.0
-                else: # no value found
-                    weight = 1.0
-                # remove from main text
-                remaining -= idx
-                text = text[idx+1:]
-                # append the sub-prompt and its weight
-                prompts.append(prompt)
-                weights.append(weight)
-            else: # no : found
-                if len(text) > 0: # there is still text though
-                    # take remainder as weight 1
-                    prompts.append(text)
-                    weights.append(1.0)
-                remaining = 0
-        return prompts, weights
-
-
-config = OmegaConf.load("configs/stable-diffusion/v1-inference.yaml")
-model = load_model_from_config(config, "/gdrive/My Drive/model.ckpt")
-
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-model = model.half().to(device)
-
 
 def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, ddim_eta: float, n_iter: int, n_samples: int, cfg_scales: str, denoising_strength: float, seed: int, height: int, width: int, same_seed: bool, GFPGAN: bool, bg_upsampling: bool, upscale: int, outdir: str):
     torch.cuda.empty_cache()
