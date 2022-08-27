@@ -105,12 +105,13 @@ def infer(img, masking_option, prompt, width, height, prompt_strength, num_outpu
     outpath = outdir
     f = []
     message = ''
+    rand = random.randint(1,9999999)
     for i in range(len(images_list)):
         aaa = seed
 #        message+= f'Request "{images_list[i][1]}" was saved to folder: {aaa}/ \n'
 
 #            cfg=cfg_scales
-        pt = f'{outpath}/{aaa}.jpg'
+        pt = f'{outpath}/{aaa}_{rand}_{i}.jpg'
 
         images_list[i].save(pt, format = 'JPEG', optimize = True)
         f.append(pt)
