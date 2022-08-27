@@ -47,6 +47,7 @@ masking_model = hub.Module(name='U2Net')
 os.makedirs("/content/diffusers-cache", exist_ok=True)
 
 
+
 mimetypes.init()
 mimetypes.add_type('application/javascript', '.js')
 
@@ -466,6 +467,13 @@ class StableDiffusionImg2ImgPipeline(DiffusionPipeline):
 
 MODEL_CACHE = "/content/diffusers-cache"
 
+pipe = StableDiffusionPipeline.from_pretrained(
+    model_id,
+    cache_dir="/content/diffusers-cache",
+    revision="fp16",
+    torch_dtype=torch.float16,
+    use_auth_token=True,
+)
 
 class BasePredictor(ABC):
     def setup(self) -> None:
