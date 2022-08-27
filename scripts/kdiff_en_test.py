@@ -549,12 +549,9 @@ class Predictor(BasePredictor):
 #            aaa = output[i][0]
 
 #            cfg=cfg_scales
-            pt = f'{outpath}/{aaa}.jpg'
-
-            output[i].save(pt, format = 'JPEG', optimize = True)
-            f.append(pt)
-            with Image.open(f[i]) as img:
-                    print(img.size)
+            pt = f'{outpath}/{aaa}.png'
+            
+            output[i].save(pt, format = 'png')
 
         print(output["sample"])
         return output["sample"] #output_paths
