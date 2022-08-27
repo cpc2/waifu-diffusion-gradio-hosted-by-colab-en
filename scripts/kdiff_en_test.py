@@ -27,7 +27,6 @@ import random
 import os
 import sys
 import torch
-from diffusers import
 import inspect
 from typing import Any, Callable, Dict, List, Type, Optional, Union, Tuple
 from diffusers import (
