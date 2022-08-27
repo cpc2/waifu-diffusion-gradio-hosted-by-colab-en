@@ -108,14 +108,14 @@ def infer(img, masking_option, prompt, width, height, prompt_strength, num_outpu
     for i in range(len(images_list)):
         aaa = seed
 #        message+= f'Request "{images_list[i][1]}" was saved to folder: {aaa}/ \n'
-        for k in range(2, len(images_list[i])):
-#            cfg=cfg_scales
-            pt = f'{outpath}/{aaa}/{k-2}.jpg'
 
-            images_list[i][k].save(pt, format = 'JPEG', optimize = True)
-            f.append(pt)
-            with Image.open(f[i]) as img:
-                print(img.size)
+#            cfg=cfg_scales
+        pt = f'{outpath}/{aaa}.jpg'
+
+        images_list[i].save(pt, format = 'JPEG', optimize = True)
+        f.append(pt)
+        with Image.open(f[i]) as img:
+            print(img.size)
 
     print(images_list)
     return images_list, mask
