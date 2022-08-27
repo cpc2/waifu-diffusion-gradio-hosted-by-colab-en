@@ -473,7 +473,7 @@ pipe = StableDiffusionPipeline.from_pretrained(
     revision="fp16",
     torch_dtype=torch.float16,
 #    use_auth_token=False,
-    local_files_only=True,
+    local_files_only=False,
 
 )
 
@@ -807,7 +807,7 @@ dream_interface = gr.Interface(
     dream,
     inputs=[
         gr.Textbox(label='Prompt',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1),
-	gr.Variable(value=None, visible=False),
+        gr.Variable(value=None, visible=False),
         gr.Slider(minimum=1, maximum=200, step=1, label="Steps", value=50),
         gr.Checkbox(label='PLMS ', value=True, visible=False),
         gr.Checkbox(label='Sampling from one point', value=False, visible=False),
