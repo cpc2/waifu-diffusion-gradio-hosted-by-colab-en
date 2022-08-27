@@ -403,8 +403,8 @@ class StableDiffusionImg2ImgPipeline(DiffusionPipeline):
         image = self.numpy_to_pil(image)
 
 #        return {"sample": image, "nsfw_content_detected": has_nsfw_concept}
-#        return {"sample": image}
-        return image:["sample"]
+        return {"sample": image}
+#        return image:["sample"]
 
     def latents_from_init_image(
         self,
