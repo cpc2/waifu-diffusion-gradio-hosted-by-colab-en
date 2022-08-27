@@ -788,6 +788,7 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
 
 
 
+    rand1 = random.randint(0,9999999)
     f = []
     message = ''
     for i in range(len(output_images)):
@@ -795,7 +796,7 @@ def dream(prompt: str, init_img, ddim_steps: int, plms: bool, fixed_code: bool, 
         message+= f'Request "{output_images[i][1]}" was saved to folder: {outpath}/ \n'
         for k in range(2, len(output_images[i])):
             cfg=cfg_scales
-            pt = f'{outpath}/{aaa}_{k-2}.jpg'
+            pt = f'{outpath}/{aaa}_{rand1}_{k-2}.jpg'
             if GFPGAN:
                 (Image.fromarray(FACE_RESTORATION(output_images[i][k], bg_upsampling, upscale).astype(np.uint8))).save(pt, format = 'JPEG', optimize = True)
             else:
