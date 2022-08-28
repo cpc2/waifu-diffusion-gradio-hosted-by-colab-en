@@ -550,7 +550,7 @@ with gr.Blocks(css=css, analytics_enabled=False, title="Stable Diffusion") as de
 
             btn.click(
                 dream,
-                [prompt, placeholder_none, placeholder_none, placeholder_false, placeholder_none, steps, sampling, placeholder_false, ddim_eta, batch_count, batch_size, cfg, placeholder_0, seed, height, width, same_seed, placeholder_none, GFPGAN, bg_upsampling, upscale],
+                [prompt, placeholder_none, placeholder_none, placeholder_false, placeholder_none, steps, sampling, placeholder_false, ddim_eta, batch_count, batch_size, cfg, placeholder_0, seed, height, width, same_seed, placeholder_none, GFPGAN, bg_upsampling, upscale, outdir],
                 [output_txt2img_gallery, output_txt2img_seed, output_txt2img_stats]
             )
         with gr.TabItem("Stable Diffusion Image-to-Image"):
@@ -607,12 +607,12 @@ with gr.Blocks(css=css, analytics_enabled=False, title="Stable Diffusion") as de
             )
             btn_mask.click(
                 dream,
-                [prompt, image_editor_mode, image_mask, mask, mask_blur_strength, steps, sampling, placeholder_false, ddim_eta, batch_count, batch_size, cfg, denoising, seed, height, width, same_seed, resize, GFPGAN, bg_upsampling, upscale],
+                [prompt, image_editor_mode, image_mask, mask, mask_blur_strength, steps, sampling, placeholder_false, ddim_eta, batch_count, batch_size, cfg, denoising, seed, height, width, same_seed, resize, GFPGAN, bg_upsampling, upscale, outdir],
                 [output_img2img_gallery, output_img2img_seed, output_img2img_stats]            )
 
             btn_crop.click(
                 dream,
-                [prompt, image_editor_mode, image, mask, mask_blur_strength, steps, sampling, placeholder_false, ddim_eta, batch_count, batch_size, cfg, denoising, seed, height, width, same_seed, resize, GFPGAN, bg_upsampling, upscale],
+                [prompt, image_editor_mode, image, mask, mask_blur_strength, steps, sampling, placeholder_false, ddim_eta, batch_count, batch_size, cfg, denoising, seed, height, width, same_seed, resize, GFPGAN, bg_upsampling, upscale, outdir],
                 [output_img2img_gallery, output_img2img_seed, output_img2img_stats]
                 )
 
