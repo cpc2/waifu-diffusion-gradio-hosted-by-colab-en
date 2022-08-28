@@ -189,7 +189,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--config", default="./configs/stable-diffusion/v1-inference.yaml", type=str)
 parser.add_argument("--ckpt", default="/gdrive/MyDrive/model.ckpt", type=str)
 parser.add_argument("--precision", default="autocast", type=str)
-parser.add_argument("--outdir", default="./outputs/txt2img-samples", type=str)
+#parser.add_argument("--outdir", default="./outputs/txt2img-samples", type=str)
 parser.add_argument("--GFPGAN", default='/content/GFPGAN/experiments/pretrained_models/GFPGANv1.3.pth', type=str)
 
 args = parser.parse_args()
@@ -258,7 +258,7 @@ def check_prompt_length(prompt, comments):
 
 LANCZOS = (Image.Resampling.LANCZOS if hasattr(Image, 'Resampling') else Image.LANCZOS)
 
-def dream(prompt: str, mask_mode, init_img_arr, keep_mask, mask_blur_strength, ddim_steps: int, sampler_name: str, fixed_code: bool, ddim_eta: float, n_iter: int, n_samples: int, cfg_scales: str, denoising_strength: float, seed: int, height: int, width: int, same_seed: bool, resize_mode, GFPGAN: bool, bg_upsampling: bool, upscale: int, outdir = args.outdir, precision = args.precision, GFPGANth = args.GFPGAN):
+def dream(prompt: str, mask_mode, init_img_arr, keep_mask, mask_blur_strength, ddim_steps: int, sampler_name: str, fixed_code: bool, ddim_eta: float, n_iter: int, n_samples: int, cfg_scales: str, denoising_strength: float, seed: int, height: int, width: int, same_seed: bool, resize_mode, GFPGAN: bool, bg_upsampling: bool, upscale: int, outdir: str, precision = args.precision, GFPGANth = args.GFPGAN):
 
 
     if mask_mode == 'Mask':
@@ -362,11 +362,11 @@ def dream(prompt: str, mask_mode, init_img_arr, keep_mask, mask_blur_strength, d
                         output_images[-1].append(aaa)
                         output_images[-1].append(prompts[0])
 
-                        os.makedirs(f'{outpath}/{aaa}', exist_ok=True)
+                        os.makedirs(f'{outpath}/prompts', exist_ok=True)
                         for n in trange(n_iter, desc="Sampling", disable=not accelerator.is_main_process):
 
 
-                            with open(f'{outpath}/{aaa}/prompt.txt', 'w') as fff:
+                            with open(f'{outpath}/prompts/{aaa}_prompt.txt', 'w') as fff:
                                 fff.write(prompts[0])
 
                             if n_iter > 1: seedit += 1
@@ -468,7 +468,7 @@ def dream(prompt: str, mask_mode, init_img_arr, keep_mask, mask_blur_strength, d
                     z=0
                 else:
                     z+=1
-            pt = f'{outpath}/{aaa}/{cfg} {random.randint(1, 200000)}.jpg'
+            pt = f'{outpath}/{aaa}_{cfg}_{random.randint(1, 200000)}.jpg'
             if GFPGAN:
                 (Image.fromarray(FACE_RESTORATION(output_images[i][k], bg_upsampling, upscale, GFPGANth).astype(np.uint8))).save(pt, format = 'JPEG', mize = True)
             else:
@@ -537,6 +537,8 @@ with gr.Blocks(css=css, analytics_enabled=False, title="Stable Diffusion") as de
                     GFPGAN = gr.Checkbox(label='GFPGAN, restores faces, can upscale. All settings are below it.', value=True)
                     bg_upsampling = gr.Checkbox(label='BG Enhancement', value=True)
                     upscale = gr.Slider(minimum=1, maximum=8, step=1, label="Upscaling. 1 = OFF.", value=2)
+                    outdir =  gr.Textbox(label='Save Dir:', value = "/gdrive/My Drive/GradIO_out/")
+
                     btn = gr.Button("Generate")
                     placeholder_none = gr.Variable(value=None, visible=False)
                     placeholder_false = gr.Variable(value=False, visible=False)
@@ -562,7 +564,7 @@ with gr.Blocks(css=css, analytics_enabled=False, title="Stable Diffusion") as de
                         copy_from_painterro_btn = gr.Button(value="Get image from Advanced Editor")
                     image = gr.Image(value=None, source="upload", interactive=True, type="pil", tool="select")
                     image_mask = gr.Image(value=None, source="upload", interactive=True, type="pil", tool="sketch", visible=False)
-                    mask = gr.Radio(choices=["Keep masked area", "Regenerate only masked area"], label="Mask Mode", type="index", value="Regenerate only masked area", visible=False)
+                    mask = gr.Radio(choices=["Regen Masked Area", "Keep Only Masked area"], label="Mask Mode", type="index", value="Regen Masked Area", visible=False)
                     mask_blur_strength = gr.Slider(minimum=1, maximum=10, step=1, label="How much blurry should the mask be? (to avoid hard edges)", value=3, visible=False)
                     steps = gr.Slider(minimum=1, maximum=500, step=1, label="Diffusion steps, ideal - 100.", value=50)
                     sampling = gr.Radio(label='Sampler', choices=['k_dpm_2_a', 'k_dpm_2', 'k_euler_a', 'k_euler', 'k_heun', 'k_lms'], value='k_euler_a')
@@ -580,6 +582,7 @@ with gr.Blocks(css=css, analytics_enabled=False, title="Stable Diffusion") as de
                     GFPGAN = gr.Checkbox(label='GFPGAN, restores faces, can upscale. All settings are below it.', value=True)
                     bg_upsampling = gr.Checkbox(label='BG Enhancement', value=False)
                     upscale = gr.Slider(minimum=1, maximum=8, step=1, label="Upscale, 1 = OFF", value=1)
+                    outdir =  gr.Textbox(label='Save Dir:', value = "/gdrive/My Drive/GradIO_out/")
 
                     btn_mask = gr.Button("Generate").style(full_width=True)
                     btn_crop = gr.Button("Generate", visible=False).style(full_width=True)
