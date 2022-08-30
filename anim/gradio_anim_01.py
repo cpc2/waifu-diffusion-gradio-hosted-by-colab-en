@@ -621,22 +621,22 @@ def dream_anim(animation_prompts: str, prompts: str, animation_mode: str, max_fr
     init_c = None
 
     if animation_mode == 'None':
-    max_frames = 1
+        max_frames = 1
     if key_frames:
-    angle_series = get_inbetweens(parse_key_frames(angle))
-    zoom_series = get_inbetweens(parse_key_frames(zoom))
-    translation_x_series = get_inbetweens(parse_key_frames(translation_x))
-    translation_y_series = get_inbetweens(parse_key_frames(translation_y))
+        angle_series = get_inbetweens(parse_key_frames(angle))
+        zoom_series = get_inbetweens(parse_key_frames(zoom))
+        translation_x_series = get_inbetweens(parse_key_frames(translation_x))
+        translation_y_series = get_inbetweens(parse_key_frames(translation_y))
     if seed == -1:
-    seed = random.randint(0, 2**32)
+        seed = random.randint(0, 2**32)
     if animation_mode == 'Video Input':
-    use_init = True
+        use_init = True
     if not use_init:
-    init_image = None
-    strength = 0
+        init_image = None
+        strength = 0
     if sampler == 'plms' and (use_init or animation_mode != 'None'):
-    print(f"Init images aren't supported with PLMS yet, switching to KLMS")
-    sampler = 'klms'
+        print(f"Init images aren't supported with PLMS yet, switching to KLMS")
+        sampler = 'klms'
     if sampler != 'ddim':
         ddim_eta = 0
 
