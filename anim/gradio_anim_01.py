@@ -79,8 +79,9 @@
 # anim_args = SimpleNamespace(**DeforumAnimArgs())
 #@markdown **Python Definitions**
 import json
-from IPython import display
+#from IPython import display
 
+import gradio as gr
 import argparse, glob, os, pathlib, subprocess, sys, time
 import cv2
 import numpy as np
@@ -109,7 +110,7 @@ sys.path.append('./src/clip')
 sys.path.append('./stable-diffusion/')
 sys.path.append('./k-diffusion')
 
-from helpers import save_samples
+#from helpers import save_samples
 from ldm.util import instantiate_from_config
 from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.models.diffusion.plms import PLMSSampler
@@ -866,16 +867,16 @@ anim_interface = gr.Interface(
     inputs=[
         gr.Textbox(label='Animation Prompts',  placeholder="\"a beautiful forest by Asher Brown Durand, trending on Artstation\"", lines=5),
         gr.Textbox(label='Prompts',  placeholder="0: \"a beautiful apple, trending on Artstation\"", lines=5),
-        gr.Dropdown(label='Animation Mode' ['None', '2D', '"Video Input"', '"Interpolation"']),
+        gr.Dropdown(label='Animation Mode', choices=["None", "2D", "Video Input", "Interpolation"]),
         gr.Slider(minimum=1, maximum=1000, step=1, label='Max frames', value=1),
-        gr.Dropdown(label='Border' ["wrap", "replicate"]),
+        gr.Dropdown(label='Border', choices=["wrap", "replicate"]),
         gr.Checkbox(label='KeyFrames', value=True, visible=False),
-        gr.Dropdown(label='Spline Interpolation' ["Linear", "Quadratic", "Cubic"]),
+        gr.Dropdown(label='Spline Interpolation', choices=["Linear", "Quadratic", "Cubic"]),
         gr.Textbox(label='Angles',  placeholder="0:(0)", lines=1),
         gr.Textbox(label='Zoom',  placeholder="0: (1.04)", lines=1),
         gr.Textbox(label='Translation X',  placeholder="0: (0)", lines=1),
         gr.Textbox(label='Translation Y',  placeholder="0: (0)", lines=1),
-        gr.Dropdown(label='Color Coherence' ["None", "MatchFrame0"]),
+        gr.Dropdown(label='Color Coherence', choices=["None", "MatchFrame0"]),
         gr.Slider(minimum=0.01, maximum=1.00, step=0.01, label='Prev Frame Noise', value=0.02),
         gr.Slider(minimum=0.01, maximum=1.00, step=0.01, label='Prev Frame Strength', value=0.65),
         gr.Textbox(label='Video init path',  placeholder='/content/video_in.mp4', lines=1),
@@ -892,11 +893,11 @@ anim_interface = gr.Interface(
         gr.Slider(minimum=256, maximum=1024, step=64, label='Height', value=512),
         gr.Textbox(label='Init Image link',  placeholder="https://cdn.pixabay.com/photo/2022/07/30/13/10/green-longhorn-beetle-7353749_1280.jpg", lines=5),
         gr.Textbox(label='Seed',  placeholder="-1", lines=1, value='-1'),
-        gr.Radio(label='Sampler' ["klms","dpm2","dpm2_ancestral","heun","euler","euler_ancestral","plms", "ddim"], value="klms"),
+        gr.Radio(label='Sampler', choices=["klms","dpm2","dpm2_ancestral","heun","euler","euler_ancestral","plms", "ddim"], value="klms"),
         gr.Slider(minimum=1, maximum=100, step=1, label='Steps', value=10),
         gr.Slider(minimum=1, maximum=25, step=1, label='Scale', value=7),
         gr.Slider(minimum=0, maximum=1.0, step=0.1, label='DDIM ETA', value=0.0),
-        gr.Dropdown(label='Seed Behavior' ["iter", "fixed", "random"], value="iter"),
+        gr.Dropdown(label='Seed Behavior', choices=["iter", "fixed", "random"], value="iter"),
         gr.Slider(minimum=1, maximum=25, step=1, label='Number of Batches', value=1),
     ],
     outputs=[
