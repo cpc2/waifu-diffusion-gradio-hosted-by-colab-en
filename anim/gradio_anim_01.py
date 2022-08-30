@@ -83,6 +83,42 @@ import json
 
 import gradio as gr
 import argparse, glob, os, pathlib, subprocess, sys, time
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--outdir", type=str, nargs="?", help="dir to write results to", default=None)
+parser.add_argument("--outdir_txt2img", type=str, nargs="?", help="dir to write txt2img results to (overrides --outdir)", default=None)
+parser.add_argument("--outdir_img2img", type=str, nargs="?", help="dir to write img2img results to (overrides --outdir)", default=None)
+parser.add_argument("--save-metadata", action='store_true', help="Whether to embed the generation parameters in the sample images", default=False)
+parser.add_argument("--skip-grid", action='store_true', help="do not save a grid, only individual samples. Helpful when evaluating lots of samples", default=False)
+parser.add_argument("--skip-save", action='store_true', help="do not save indiviual samples. For speed measurements.", default=False)
+parser.add_argument("--grid-format", type=str, help="png for lossless png files; jpg:quality for lossy jpeg; webp:quality for lossy webp, or webp:-compression for lossless webp", default="jpg:95")
+parser.add_argument("--n_rows", type=int, default=-1, help="rows in the grid; use -1 for autodetect and 0 for n_rows to be same as batch_size (default: -1)",)
+parser.add_argument("--config", type=str, default="configs/stable-diffusion/v1-inference.yaml", help="path to config which constructs model",)
+parser.add_argument("--ckpt", type=str, default="/gdrive/MyDrive/model.ckpt", help="path to checkpoint of model",)
+parser.add_argument("--precision", type=str, help="evaluate at this precision", choices=["full", "autocast"], default="autocast")
+parser.add_argument("--optimized", action='store_true', help="load the model onto the device piecemeal instead of all at once to reduce VRAM usage at the cost of performance")
+parser.add_argument("--optimized-turbo", action='store_true', help="alternative optimization mode that does not save as much VRAM but runs siginificantly faster")
+parser.add_argument("--gfpgan-dir", type=str, help="GFPGAN directory", default=('./src/gfpgan' if os.path.exists('./src/gfpgan') else './GFPGAN')) # i disagree with where you're putting it but since all guidefags are doing it this way, there you go
+parser.add_argument("--realesrgan-dir", type=str, help="RealESRGAN directory", default=('./src/realesrgan' if os.path.exists('./src/realesrgan') else './RealESRGAN'))
+parser.add_argument("--realesrgan-model", type=str, help="Upscaling model for RealESRGAN", default=('RealESRGAN_x4plus'))
+parser.add_argument("--no-verify-input", action='store_true', help="do not verify input to check if it's too long", default=False)
+parser.add_argument("--no-half", action='store_true', help="do not switch the model to 16-bit floats", default=False)
+parser.add_argument("--no-progressbar-hiding", action='store_true', help="do not hide progressbar in gradio UI (we hide it because it slows down ML if you have hardware accleration in browser)", default=False)
+parser.add_argument("--share", action='store_true', help="Should share your server on gradio.app, this allows you to use the UI from your mobile app", default=False)
+parser.add_argument("--share-password", type=str, help="Sharing is open by default, use this to set a password. Username: webui", default=None)
+parser.add_argument("--defaults", type=str, help="path to configuration file providing UI defaults, uses same format as cli parameter", default='configs/webui/webui.yaml')
+parser.add_argument("--gpu", type=int, help="choose which GPU to use if you have multiple", default=0)
+parser.add_argument("--extra-models-cpu", action='store_true', help="run extra models (GFGPAN/ESRGAN) on cpu", default=False)
+parser.add_argument("--extra-models-gpu", action='store_true', help="run extra models (GFGPAN/ESRGAN) on cpu", default=False)
+parser.add_argument("--esrgan-cpu", action='store_true', help="run ESRGAN on cpu", default=False)
+parser.add_argument("--gfpgan-cpu", action='store_true', help="run GFPGAN on cpu", default=False)
+parser.add_argument("--esrgan-gpu", type=int, help="run ESRGAN on specific gpu (overrides --gpu)", default=0)
+parser.add_argument("--gfpgan-gpu", type=int, help="run GFPGAN on specific gpu (overrides --gpu) ", default=0)
+parser.add_argument("--cli", type=str, help="don't launch web server, take Python function kwargs from this file.", default=None)
+opt = parser.parse_args()
+
+
+
 import cv2
 import numpy as np
 import pandas as pd
@@ -129,6 +165,102 @@ class CFGDenoiser(nn.Module):
         cond_in = torch.cat([uncond, cond])
         uncond, cond = self.inner_model(x_in, sigma_in, cond=cond_in).chunk(2)
         return uncond + (cond - uncond) * cond_scale
+def load_model_from_config(config, ckpt, verbose=False):
+    print(f"Loading model from {ckpt}")
+    pl_sd = torch.load(ckpt, map_location="cpu")
+    if "global_step" in pl_sd:
+        print(f"Global Step: {pl_sd['global_step']}")
+    sd = pl_sd["state_dict"]
+    model = instantiate_from_config(config.model)
+    m, u = model.load_state_dict(sd, strict=False)
+    if len(m) > 0 and verbose:
+        print("missing keys:")
+        print(m)
+    if len(u) > 0 and verbose:
+        print("unexpected keys:")
+        print(u)
+
+    model.cuda()
+    model.eval()
+    return model
+
+def load_sd_from_config(ckpt, verbose=False):
+    print(f"Loading model from {ckpt}")
+    pl_sd = torch.load(ckpt, map_location="cpu")
+    if "global_step" in pl_sd:
+        print(f"Global Step: {pl_sd['global_step']}")
+    sd = pl_sd["state_dict"]
+    return
+if opt.optimized:
+    sd = load_sd_from_config(opt.ckpt)
+    li, lo = [], []
+    for key, v_ in sd.items():
+        sp = key.split('.')
+        if(sp[0]) == 'model':
+            if('input_blocks' in sp):
+                li.append(key)
+            elif('middle_block' in sp):
+                li.append(key)
+            elif('time_embed' in sp):
+                li.append(key)
+            else:
+                lo.append(key)
+    for key in li:
+        sd['model1.' + key[6:]] = sd.pop(key)
+    for key in lo:
+        sd['model2.' + key[6:]] = sd.pop(key)
+
+    config = OmegaConf.load("optimizedSD/v1-inference.yaml")
+    device = torch.device(f"cuda:{opt.gpu}") if torch.cuda.is_available() else torch.device("cpu")
+
+    model = instantiate_from_config(config.modelUNet)
+    _, _ = model.load_state_dict(sd, strict=False)
+    if not opt.optimized:
+        model.cuda()
+    model.eval()
+    model.turbo = opt.optimized_turbo
+
+    modelCS = instantiate_from_config(config.modelCondStage)
+    _, _ = modelCS.load_state_dict(sd, strict=False)
+    modelCS.cond_stage_model.device = device
+    modelCS.eval()
+
+    modelFS = instantiate_from_config(config.modelFirstStage)
+    _, _ = modelFS.load_state_dict(sd, strict=False)
+    modelFS.eval()
+
+    del sd
+
+    if not opt.no_half:
+        model = model.half()
+        modelCS = modelCS.half()
+        modelFS = modelFS.half()
+else:
+    config = OmegaConf.load(opt.config)
+    model = load_model_from_config(config, opt.ckpt)
+
+    device = torch.device(f"cuda:{opt.gpu}") if torch.cuda.is_available() else torch.device("cpu")
+    model = (model if opt.no_half else model.half()).to(device)
+
+def load_embeddings(fp):
+    if fp is not None and hasattr(model, "embedding_manager"):
+        model.embedding_manager.load(fp.name)
+
+
+def get_font(fontsize):
+    fonts = ["arial.ttf", "DejaVuSans.ttf"]
+    for font_name in fonts:
+        try:
+            return ImageFont.truetype(font_name, fontsize)
+        except OSError:
+           pass
+
+    # ImageFont.load_default() is practically unusable as it only supports
+    # latin1, so raise an exception instead if no usable font was found
+    raise Exception(f"No usable font found (tried {', '.join(fonts)})")
+
+
+
 
 def add_noise(sample: torch.Tensor, noise_amt: float):
     return sample + torch.randn(sample.shape, device=sample.device) * noise_amt
@@ -350,7 +482,7 @@ def parse_key_frames(string, prompt_parser=None):
         raise RuntimeError('Key Frame string not correctly formatted')
     return frames
 
-def get_inbetweens(key_frames, integer=False):
+def get_inbetweens(key_frames, max_frames, interp_spline, integer=False):
     key_frame_series = pd.Series([np.nan for a in range(max_frames)])
 
     for i, value in key_frames.items():
@@ -533,11 +665,15 @@ def render_interpolation(args, anim_args):
     #clear init_c
     init_c = None
 
+def split_lines(s):
+  return s.split('\n')
 
-
-def dream_anim(animation_prompts: str, prompts: str, animation_mode: str, max_frames: int, border: str, key_frames: bool, interp_spline: str, angle: str, zoom: str, translation_x: str, translation_y: str, color_coherence: str, previous_frame_noise: float, previous_frame_strength: float, video_init_path: str, extract_nth_frame: int, interpolate_x_frames: int, batch_name: str, outdir: str, save_grid: bool, save_settings: bool, save_samples: bool, display_samples: bool, n_samples: int, W: int, H: int, init_image: str, seed: str, sampler: str, steps: int, scale: int, ddim_eta: float, seed_behavior: str, n_batch: int):
+def dream_anim(a_prompts: str, keys: str, prompts: str, animation_mode: str, max_frames: int, border: str, key_frames: bool, interp_spline: str, angle: str, zoom: str, translation_x: str, translation_y: str, color_coherence: str, previous_frame_noise: float, previous_frame_strength: float, video_init_path: str, extract_nth_frame: int, interpolate_x_frames: int, batch_name: str, outdir: str, save_grid: bool, save_settings: bool, save_samples: bool, display_samples: bool, n_samples: int, W: int, H: int, init_image: str, seed: str, sampler: str, steps: int, scale: int, ddim_eta: float, seed_behavior: str, n_batch: int, use_init: bool):
     torch.cuda.empty_cache()
     parser = argparse.ArgumentParser()
+    width = 512
+    height = 512
+
 
 
 
@@ -624,10 +760,10 @@ def dream_anim(animation_prompts: str, prompts: str, animation_mode: str, max_fr
     if animation_mode == 'None':
         max_frames = 1
     if key_frames:
-        angle_series = get_inbetweens(parse_key_frames(angle))
-        zoom_series = get_inbetweens(parse_key_frames(zoom))
-        translation_x_series = get_inbetweens(parse_key_frames(translation_x))
-        translation_y_series = get_inbetweens(parse_key_frames(translation_y))
+        angle_series = get_inbetweens(parse_key_frames(angle), max_frames, interp_spline)
+        zoom_series = get_inbetweens(parse_key_frames(zoom), max_frames, interp_spline)
+        translation_x_series = get_inbetweens(parse_key_frames(translation_x), max_frames, interp_spline)
+        translation_y_series = get_inbetweens(parse_key_frames(translation_y), max_frames, interp_spline)
     if seed == -1:
         seed = random.randint(0, 2**32)
     if animation_mode == 'Video Input':
@@ -644,17 +780,25 @@ def dream_anim(animation_prompts: str, prompts: str, animation_mode: str, max_fr
     output_images = []
 
     # animations use key framed prompts
-    prompts = animation_prompts
+    #animation_prompts = split_lines(prompts)
 
     # create output folder for the batch
     os.makedirs(outdir, exist_ok=True)
     print(f"Saving animation frames to {outdir}")
 
     # save settings for the batch
-    settings_filename = os.path.join(outdir, f"{timestring}_settings.txt")
-    with open(settings_filename, "w+", encoding="utf-8") as f:
-        s = {**dict(__dict__), **dict(__dict__)}
-        json.dump(s, f, ensure_ascii=False, indent=4)
+#    settings_filename = os.path.join(outdir, f"{timestring}_settings.txt")
+#    with open(settings_filename, "w+", encoding="utf-8") as f:
+#        s = {**dict(__dict__), **dict(__dict__)}
+#        json.dump(s, f, ensure_ascii=False, indent=4)
+    animation_prompts = {}
+    promptlist = split_lines(a_prompts)
+    keylist = split_lines(keys)
+    animation_prompts = dict(zip(keylist, promptlist))
+
+    print(animation_prompts)
+
+
 
     # expand prompts out to per-frame
     prompt_series = pd.Series([np.nan for a in range(max_frames)])
@@ -765,6 +909,8 @@ def dream_anim(animation_prompts: str, prompts: str, animation_mode: str, max_fr
                                 static_threshold=static_threshold)
 
         results = []
+        samples = []
+
         precision_scope = autocast if precision == "autocast" else nullcontext
         with torch.no_grad():
             with precision_scope("cuda"):
@@ -823,8 +969,8 @@ def dream_anim(animation_prompts: str, prompts: str, animation_mode: str, max_fr
                                                                         x_T=start_code,
                                                                         img_callback=callback)
 
-                            if return_latent:
-                                results.append(samples.clone())
+                            #if return_latent:
+                            #    results.append(samples.clone())
 
                             x_samples = model.decode_first_stage(samples)
                             if return_sample:
@@ -839,7 +985,6 @@ def dream_anim(animation_prompts: str, prompts: str, animation_mode: str, max_fr
                                 x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
                                 image = Image.fromarray(x_sample.astype(np.uint8))
                                 results.append(image)
-
 
 
 
@@ -866,24 +1011,26 @@ anim_interface = gr.Interface(
     dream_anim,
     inputs=[
         gr.Textbox(label='Animation Prompts',  placeholder="\"a beautiful forest by Asher Brown Durand, trending on Artstation\"", lines=5),
+        gr.Textbox(label='Keyframes',  placeholder="(0):", lines=5, value="(0):"),
+
         gr.Textbox(label='Prompts',  placeholder="0: \"a beautiful apple, trending on Artstation\"", lines=5),
-        gr.Dropdown(label='Animation Mode', choices=["None", "2D", "Video Input", "Interpolation"]),
+        gr.Dropdown(label='Animation Mode', choices=["None", "2D", "Video Input", "Interpolation"], value="2D"),
         gr.Slider(minimum=1, maximum=1000, step=1, label='Max frames', value=1),
-        gr.Dropdown(label='Border', choices=["wrap", "replicate"]),
+        gr.Dropdown(label='Border', choices=["wrap", "replicate"], value="wrap"),
         gr.Checkbox(label='KeyFrames', value=True, visible=False),
-        gr.Dropdown(label='Spline Interpolation', choices=["Linear", "Quadratic", "Cubic"]),
-        gr.Textbox(label='Angles',  placeholder="0:(0)", lines=1),
-        gr.Textbox(label='Zoom',  placeholder="0: (1.04)", lines=1),
-        gr.Textbox(label='Translation X',  placeholder="0: (0)", lines=1),
-        gr.Textbox(label='Translation Y',  placeholder="0: (0)", lines=1),
-        gr.Dropdown(label='Color Coherence', choices=["None", "MatchFrame0"]),
+        gr.Dropdown(label='Spline Interpolation', choices=["Linear", "Quadratic", "Cubic"], value="Linear"),
+        gr.Textbox(label='Angles',  placeholder="0:(0)", lines=1, value="0:(0)"),
+        gr.Textbox(label='Zoom',  placeholder="0: (1.04)", lines=1, value="0:(0)"),
+        gr.Textbox(label='Translation X',  placeholder="0: (0)", lines=1, value="0:(0)"),
+        gr.Textbox(label='Translation Y',  placeholder="0: (0)", lines=1, value="0:(0)"),
+        gr.Dropdown(label='Color Coherence', choices=["None", "MatchFrame0"], value="None"),
         gr.Slider(minimum=0.01, maximum=1.00, step=0.01, label='Prev Frame Noise', value=0.02),
         gr.Slider(minimum=0.01, maximum=1.00, step=0.01, label='Prev Frame Strength', value=0.65),
         gr.Textbox(label='Video init path',  placeholder='/content/video_in.mp4', lines=1),
         gr.Slider(minimum=1, maximum=100, step=1, label='Extract n-th frame', value=1),
         gr.Slider(minimum=1, maximum=25, step=1, label='Interpolate n frames', value=4),
-        gr.Textbox(label='Batch Name',  placeholder="Batch_001", lines=1),
-        gr.Textbox(label='Output Dir',  placeholder="/content/", lines=1),
+        gr.Textbox(label='Batch Name',  placeholder="Batch_001", lines=1, value="test"),
+        gr.Textbox(label='Output Dir',  placeholder="/content/", lines=1, value='/content/test'),
         gr.Checkbox(label='Save Grid', value=False, visible=False),
         gr.Checkbox(label='Save Settings', value=True, visible=True),
         gr.Checkbox(label='Save Samples', value=True, visible=True),
@@ -899,6 +1046,8 @@ anim_interface = gr.Interface(
         gr.Slider(minimum=0, maximum=1.0, step=0.1, label='DDIM ETA', value=0.0),
         gr.Dropdown(label='Seed Behavior', choices=["iter", "fixed", "random"], value="iter"),
         gr.Slider(minimum=1, maximum=25, step=1, label='Number of Batches', value=1),
+        gr.Checkbox(label='Use Init', value=False, visible=True)
+
     ],
     outputs=[
         gr.Gallery(),
