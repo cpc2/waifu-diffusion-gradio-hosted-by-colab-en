@@ -249,6 +249,7 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
     images = []
 
     def render_animation(args):
+        print (args.prompts)
         # animations use key framed prompts
         #args.prompts = animation_prompts
 
@@ -275,17 +276,25 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
             args.timestring = args.resume_timestring
         #prompt_series = args.prompts
         # expand prompts out to per-frame
-        prompt_series = {}
+        #prompt_series = {}
         #prompt_series = pd.Series([np.nan for a in range(args.max_frames)])
 
-        new_prom = list(args.animation_prompts.split("\n"))
-        new_key = list(args.animation_prompts.split("\n"))
-        anim_prompts = dict(zip(new_key, new_prom))
+        promptList = list(args.animation_prompts.split("\n"))
+        #keyList = list(args.prompts.split("\n"))
+        #anim_prompts = dict(zip(new_key, new_prom))
 
+        #for i in range (len(keyList)):
+        #  n = int(keyList[i])
+        #  prompt_series[n] = promptList[i]
+        #prompt_series = prompt_series.ffill().bfill()
         prompt_series = pd.Series([np.nan for a in range(args.max_frames)])
-        for i in range (len(new_key)):
-            prompt_series[i+1] = new_prom[i]
+        for i, prompt in prompts.items():
+            n = int(i)
+            prompt_series[n] = prompt
+
         prompt_series = prompt_series.ffill().bfill()
+
+
         print("PROMPT SERIES")
 
         print(prompt_series)
