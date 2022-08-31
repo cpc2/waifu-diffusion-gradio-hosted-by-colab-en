@@ -250,7 +250,7 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
 
     def render_animation(args):
         # animations use key framed prompts
-        args.prompts = animation_prompts
+        #args.prompts = animation_prompts
 
         # resume animation
         start_frame = 1
@@ -273,12 +273,24 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
         # resume from timestring
         if args.resume_from_timestring:
             args.timestring = args.resume_timestring
-
+        #prompt_series = args.prompts
         # expand prompts out to per-frame
+        prompt_series = {}
+        #prompt_series = pd.Series([np.nan for a in range(args.max_frames)])
+
+        new_prom = list(args.animation_prompts.split("\n"))
+        new_key = list(args.animation_prompts.split("\n"))
+        anim_prompts = dict(zip(new_key, new_prom))
+
         prompt_series = pd.Series([np.nan for a in range(args.max_frames)])
-        for i, prompt in animation_prompts.items():
-            prompt_series[i] = prompt
+        for i in range (len(new_key)):
+            prompt_series[i+1] = new_prom[i]
         prompt_series = prompt_series.ffill().bfill()
+        print("PROMPT SERIES")
+
+        print(prompt_series)
+
+        print("END OF PROMPT SERIES")
 
         # check for video inits
         using_vid_init = args.animation_mode == 'Video Input'
@@ -532,10 +544,11 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
     prom = animation_prompts
     key = prompts
 
-    new_prom = list(animation_prompts.split("\n"))
+    new_prom = list(prom.split("\n"))
     new_key = list(key.split("\n"))
 
-    animation_prompts = dict(zip(new_key, new_prom))
+    prompts = dict(zip(new_key, new_prom))
+    #animation_prompts = dict(zip(new_key, new_prom))
 
     print (prompts)
 
