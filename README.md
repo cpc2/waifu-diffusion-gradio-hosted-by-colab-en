@@ -1,9 +1,12 @@
-# Stable Diffusion (Colab version with GradIO web interface):
+
+[![HLKY/Deforum Animation](https://colab.research.google.com/assets/colab-badge.svg)](https://github.com/XmYx/waifu-diffusion-gradio-hosted-by-colab-en/blob/main/PUB_HLKY_StableDiffusion_GradIO_Colab.ipynb)
+
+# Stable Diffusion Colab including HLKY's WebUI, and Deforum's animation WebUI, both running GradIO and ngrok
 
 English Notebook:
 https://colab.research.google.com/drive/1CJBd4RsmTqPNiRc4pdmbcT8CS9DmoIjE
 
-All Credits to Mimocro. Thanks for your efforts! Let's talk, implementation of language selection in progress, would you consider merging once it's done?
+Credits to HLKY, Mimocro.
 
 Original fork:
 https://github.com/Mimocro/waifu-diffusion-gradio-hosted-by-colab
@@ -13,13 +16,9 @@ https://colab.research.google.com/drive/18YLSgh5gGjjsilyeSH-fB65Ml9M-e_a6
 
 At the last cell 
 ![colab](assets/Colab.png)
-Click to link provided by it to open gradio site with GUI. Supports GFPGAN to fix faces and upscale.
+Supports GFPGAN to fix faces and upscale.
 ![gui](assets/Gui.png)
-
-
-
 Based on https://github.com/harubaru/waifu-diffusion/ and https://rentry.org/kretard
-
 Now with weighted prompts support from https://github.com/lstein/stable-diffusion#weighted-prompts
 
 # Hosting local gradio app with huge improvments and modifications:
