@@ -308,6 +308,118 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
 
 
     images = []
+    def generate(args, return_latent=False, return_sample=False, return_c=False):
+
+        torch_gc()
+        # start time after garbage collection (or before?)
+        start_time = time.time()
+
+        mem_mon = MemUsageMonitor('MemMon')
+        mem_mon.start()
+
+
+
+        seed_everything(args.seed)
+        os.makedirs(args.outdir, exist_ok=True)
+
+        if args.sampler == 'plms':
+            sampler = PLMSSampler(model)
+        else:
+            sampler = DDIMSampler(model)
+
+        model_wrap = CompVisDenoiser(model)
+        batch_size = args.n_samples
+        prompt = args.prompt
+        assert prompt is not None
+        data = [batch_size * [prompt]]
+
+        init_latent = None
+        if args.init_latent is not None:
+            init_latent = args.init_latent
+        elif args.init_sample is not None:
+            init_latent = model.get_first_stage_encoding(model.encode_first_stage(args.init_sample))
+        elif args.init_image != None and args.init_image != '':
+            init_image = load_img(args.init_image, shape=(args.W, args.H)).to(device)
+            init_image = repeat(init_image, '1 ... -> b ...', b=batch_size)
+            init_latent = model.get_first_stage_encoding(model.encode_first_stage(init_image))  # move to latent space
+
+        sampler.make_schedule(ddim_num_steps=args.steps, ddim_eta=args.ddim_eta, verbose=False)
+
+        t_enc = int((1.0-args.strength) * args.steps)
+
+        start_code = None
+        if args.fixed_code and init_latent == None:
+            start_code = torch.randn([args.n_samples, args.C, args.H // args.f, args.W // args.f], device=device)
+
+        callback = make_callback(sampler=args.sampler,
+                                dynamic_threshold=args.dynamic_threshold,
+                                static_threshold=args.static_threshold)
+
+        results = []
+        precision_scope = autocast if args.precision == "autocast" else nullcontext
+        with torch.no_grad():
+            with precision_scope("cuda"):
+                with model.ema_scope():
+                    for prompts in data:
+                        uc = None
+                        if args.scale != 1.0:
+                            uc = model.get_learned_conditioning(batch_size * [""])
+                        if isinstance(prompts, tuple):
+                            prompts = list(prompts)
+                        c = model.get_learned_conditioning(prompts)
+
+                        if args.init_c != None:
+                            c = args.init_c
+
+                        if args.sampler in ["klms","dpm2","dpm2_ancestral","heun","euler","euler_ancestral"]:
+                            samples = sampler_fn(
+                                c=c,
+                                uc=uc,
+                                args=args,
+                                model_wrap=model_wrap,
+                                init_latent=init_latent,
+                                t_enc=t_enc,
+                                device=device,
+                                cb=callback)
+                        else:
+
+                            if init_latent != None:
+                                z_enc = sampler.stochastic_encode(init_latent, torch.tensor([t_enc]*batch_size).to(device))
+                                samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=args.scale,
+                                                        unconditional_conditioning=uc,)
+                            else:
+                                if args.sampler == 'plms' or args.sampler == 'ddim':
+                                    shape = [args.C, args.H // args.f, args.W // args.f]
+                                    samples, _ = sampler.sample(S=args.steps,
+                                                                    conditioning=c,
+                                                                    batch_size=args.n_samples,
+                                                                    shape=shape,
+                                                                    verbose=False,
+                                                                    unconditional_guidance_scale=args.scale,
+                                                                    unconditional_conditioning=uc,
+                                                                    eta=args.ddim_eta,
+                                                                    x_T=start_code,
+                                                                    img_callback=callback)
+
+                        if return_latent:
+                            results.append(samples.clone())
+
+                        x_samples = model.decode_first_stage(samples)
+                        if return_sample:
+                            results.append(x_samples.clone())
+
+                        x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
+
+                        if return_c:
+                            results.append(c.clone())
+
+                        for x_sample in x_samples:
+                            x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
+                            image = Image.fromarray(x_sample.astype(np.uint8))
+                            images.append(image)
+                            results.append(image)
+        torch_gc()
+        return results
 
     def render_animation(args):
         print (args.prompts)
@@ -509,118 +621,205 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
             return key_frame_series.astype(int)
         return key_frame_series
 
-    def generate(args, return_latent=False, return_sample=False, return_c=False):
+    def render_image_batch(args):
+        args.prompts = prompts
 
-        torch_gc()
-        # start time after garbage collection (or before?)
-        start_time = time.time()
-
-        mem_mon = MemUsageMonitor('MemMon')
-        mem_mon.start()
-
-
-
-        seed_everything(args.seed)
+        # create output folder for the batch
         os.makedirs(args.outdir, exist_ok=True)
+        if args.save_settings or args.save_samples:
+            print(f"Saving to {os.path.join(args.outdir, args.timestring)}_*")
 
-        if args.sampler == 'plms':
-            sampler = PLMSSampler(model)
+        # save settings for the batch
+        if args.save_settings:
+            filename = os.path.join(args.outdir, f"{args.timestring}_settings.txt")
+            with open(filename, "w+", encoding="utf-8") as f:
+                json.dump(dict(args.__dict__), f, ensure_ascii=False, indent=4)
+
+        index = 0
+
+        # function for init image batching
+        init_array = []
+        if args.use_init:
+            if args.init_image == "":
+                raise FileNotFoundError("No path was given for init_image")
+            if args.init_image.startswith('http://') or args.init_image.startswith('https://'):
+                init_array.append(args.init_image)
+            elif not os.path.isfile(args.init_image):
+                if args.init_image[-1] != "/": # avoids path error by adding / to end if not there
+                    args.init_image += "/"
+                for image in sorted(os.listdir(args.init_image)): # iterates dir and appends images to init_array
+                    if image.split(".")[-1] in ("png", "jpg", "jpeg"):
+                        init_array.append(args.init_image + image)
+            else:
+                init_array.append(args.init_image)
         else:
-            sampler = DDIMSampler(model)
+            init_array = [""]
 
-        model_wrap = CompVisDenoiser(model)
-        batch_size = args.n_samples
-        prompt = args.prompt
-        assert prompt is not None
-        data = [batch_size * [prompt]]
+        # when doing large batches don't flood browser with images
+        clear_between_batches = args.n_batch >= 32
 
-        init_latent = None
-        if args.init_latent is not None:
-            init_latent = args.init_latent
-        elif args.init_sample is not None:
-            init_latent = model.get_first_stage_encoding(model.encode_first_stage(args.init_sample))
-        elif args.init_image != None and args.init_image != '':
-            init_image = load_img(args.init_image, shape=(args.W, args.H)).to(device)
-            init_image = repeat(init_image, '1 ... -> b ...', b=batch_size)
-            init_latent = model.get_first_stage_encoding(model.encode_first_stage(init_image))  # move to latent space
+        for iprompt, prompt in enumerate(prompts):
+            args.prompt = prompt
 
-        sampler.make_schedule(ddim_num_steps=args.steps, ddim_eta=args.ddim_eta, verbose=False)
+            all_images = []
 
-        t_enc = int((1.0-args.strength) * args.steps)
+            for batch_index in range(args.n_batch):
+                if clear_between_batches:
+                    display.clear_output(wait=True)
+                print(f"Batch {batch_index+1} of {args.n_batch}")
 
-        start_code = None
-        if args.fixed_code and init_latent == None:
-            start_code = torch.randn([args.n_samples, args.C, args.H // args.f, args.W // args.f], device=device)
+                for image in init_array: # iterates the init images
+                    args.init_image = image
+                    results = generate(args)
+                    for image in results:
+                        if args.make_grid:
+                            all_images.append(T.functional.pil_to_tensor(image))
+                        if args.save_samples:
+                            filename = f"{args.timestring}_{index:05}_{args.seed}.png"
+                            image.save(os.path.join(args.outdir, filename))
+                        if args.display_samples:
+                            display.display(image)
+                        index += 1
+                    args.seed = next_seed(args)
 
-        callback = make_callback(sampler=args.sampler,
-                                dynamic_threshold=args.dynamic_threshold,
-                                static_threshold=args.static_threshold)
+            #print(len(all_images))
+            if args.make_grid:
+                grid = make_grid(all_images, nrow=int(len(all_images)/args.grid_rows))
+                grid = rearrange(grid, 'c h w -> h w c').cpu().numpy()
+                filename = f"{args.timestring}_{iprompt:05d}_grid_{args.seed}.png"
+                grid_image = Image.fromarray(grid.astype(np.uint8))
+                grid_image.save(os.path.join(args.outdir, filename))
+                display.clear_output(wait=True)
+                display.display(grid_image)
 
-        results = []
-        precision_scope = autocast if args.precision == "autocast" else nullcontext
-        with torch.no_grad():
-            with precision_scope("cuda"):
-                with model.ema_scope():
-                    for prompts in data:
-                        uc = None
-                        if args.scale != 1.0:
-                            uc = model.get_learned_conditioning(batch_size * [""])
-                        if isinstance(prompts, tuple):
-                            prompts = list(prompts)
-                        c = model.get_learned_conditioning(prompts)
+    def render_input_video(args, anim_args):
+        # create a folder for the video input frames to live in
+        video_in_frame_path = os.path.join(args.outdir, 'inputframes')
+        os.makedirs(os.path.join(args.outdir, video_in_frame_path), exist_ok=True)
 
-                        if args.init_c != None:
-                            c = args.init_c
+        # save the video frames from input video
+        print(f"Exporting Video Frames (1 every {anim_args.extract_nth_frame}) frames to {video_in_frame_path}...")
+        try:
+            for f in pathlib.Path(video_in_frame_path).glob('*.jpg'):
+                f.unlink()
+        except:
+            pass
+        vf = r'select=not(mod(n\,'+str(anim_args.extract_nth_frame)+'))'
+        subprocess.run([
+            'ffmpeg', '-i', f'{anim_args.video_init_path}',
+            '-vf', f'{vf}', '-vsync', 'vfr', '-q:v', '2',
+            '-loglevel', 'error', '-stats',
+            os.path.join(video_in_frame_path, '%04d.jpg')
+        ], stdout=subprocess.PIPE).stdout.decode('utf-8')
 
-                        if args.sampler in ["klms","dpm2","dpm2_ancestral","heun","euler","euler_ancestral"]:
-                            samples = sampler_fn(
-                                c=c,
-                                uc=uc,
-                                args=args,
-                                model_wrap=model_wrap,
-                                init_latent=init_latent,
-                                t_enc=t_enc,
-                                device=device,
-                                cb=callback)
-                        else:
+        # determine max frames from length of input frames
+        anim_args.max_frames = len([f for f in pathlib.Path(video_in_frame_path).glob('*.jpg')])
 
-                            if init_latent != None:
-                                z_enc = sampler.stochastic_encode(init_latent, torch.tensor([t_enc]*batch_size).to(device))
-                                samples = sampler.decode(z_enc, c, t_enc, unconditional_guidance_scale=args.scale,
-                                                        unconditional_conditioning=uc,)
-                            else:
-                                if args.sampler == 'plms' or args.sampler == 'ddim':
-                                    shape = [args.C, args.H // args.f, args.W // args.f]
-                                    samples, _ = sampler.sample(S=args.steps,
-                                                                    conditioning=c,
-                                                                    batch_size=args.n_samples,
-                                                                    shape=shape,
-                                                                    verbose=False,
-                                                                    unconditional_guidance_scale=args.scale,
-                                                                    unconditional_conditioning=uc,
-                                                                    eta=args.ddim_eta,
-                                                                    x_T=start_code,
-                                                                    img_callback=callback)
+        args.use_init = True
+        print(f"Loading {anim_args.max_frames} input frames from {video_in_frame_path} and saving video frames to {args.outdir}")
+        render_animation(args, anim_args)
 
-                        if return_latent:
-                            results.append(samples.clone())
+    def render_interpolation(args, anim_args):
+        # animations use key framed prompts
+        args.prompts = animation_prompts
 
-                        x_samples = model.decode_first_stage(samples)
-                        if return_sample:
-                            results.append(x_samples.clone())
+        # create output folder for the batch
+        os.makedirs(args.outdir, exist_ok=True)
+        print(f"Saving animation frames to {args.outdir}")
 
-                        x_samples = torch.clamp((x_samples + 1.0) / 2.0, min=0.0, max=1.0)
+        # save settings for the batch
+        settings_filename = os.path.join(args.outdir, f"{args.timestring}_settings.txt")
+        with open(settings_filename, "w+", encoding="utf-8") as f:
+            s = {**dict(args.__dict__), **dict(anim_args.__dict__)}
+            json.dump(s, f, ensure_ascii=False, indent=4)
 
-                        if return_c:
-                            results.append(c.clone())
+        # Interpolation Settings
+        args.n_samples = 1
+        args.seed_behavior = 'fixed' # force fix seed at the moment bc only 1 seed is available
+        prompts_c_s = [] # cache all the text embeddings
 
-                        for x_sample in x_samples:
-                            x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
-                            image = Image.fromarray(x_sample.astype(np.uint8))
-                            images.append(image)
-                            results.append(image)
-        torch_gc()
-        return results
+        print(f"Preparing for interpolation of the following...")
+
+        for i, prompt in animation_prompts.items():
+          args.prompt = prompt
+
+          # sample the diffusion model
+          results = generate(args, return_c=True)
+          c, image = results[0], results[1]
+          prompts_c_s.append(c)
+
+          # display.clear_output(wait=True)
+          display.display(image)
+
+          args.seed = next_seed(args)
+
+        display.clear_output(wait=True)
+        print(f"Interpolation start...")
+
+        frame_idx = 0
+
+        if anim_args.interpolate_key_frames:
+          for i in range(len(prompts_c_s)-1):
+            dist_frames = list(animation_prompts.items())[i+1][0] - list(animation_prompts.items())[i][0]
+            if dist_frames <= 0:
+              print("key frames duplicated or reversed. interpolation skipped.")
+              return
+            else:
+              for j in range(dist_frames):
+                # interpolate the text embedding
+                prompt1_c = prompts_c_s[i]
+                prompt2_c = prompts_c_s[i+1]
+                args.init_c = prompt1_c.add(prompt2_c.sub(prompt1_c).mul(j * 1/dist_frames))
+
+                # sample the diffusion model
+                results = generate(args)
+                image = results[0]
+
+                filename = f"{args.timestring}_{frame_idx:05}.png"
+                image.save(os.path.join(args.outdir, filename))
+                frame_idx += 1
+
+                display.clear_output(wait=True)
+                display.display(image)
+
+                args.seed = next_seed(args)
+
+        else:
+          for i in range(len(prompts_c_s)-1):
+            for j in range(anim_args.interpolate_x_frames+1):
+              # interpolate the text embedding
+              prompt1_c = prompts_c_s[i]
+              prompt2_c = prompts_c_s[i+1]
+              args.init_c = prompt1_c.add(prompt2_c.sub(prompt1_c).mul(j * 1/(anim_args.interpolate_x_frames+1)))
+
+              # sample the diffusion model
+              results = generate(args)
+              image = results[0]
+
+              filename = f"{args.timestring}_{frame_idx:05}.png"
+              image.save(os.path.join(args.outdir, filename))
+              frame_idx += 1
+
+              display.clear_output(wait=True)
+              display.display(image)
+
+              args.seed = next_seed(args)
+
+        # generate the last prompt
+        args.init_c = prompts_c_s[-1]
+        results = generate(args)
+        image = results[0]
+        filename = f"{args.timestring}_{frame_idx:05}.png"
+        image.save(os.path.join(args.outdir, filename))
+
+        display.clear_output(wait=True)
+        display.display(image)
+        args.seed = next_seed(args)
+
+        #clear init_c
+        args.init_c = None
+
+
 
     prom = animation_prompts
     key = prompts
@@ -630,31 +829,10 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
 
     prompts = dict(zip(new_key, new_prom))
     #animation_prompts = dict(zip(new_key, new_prom))
-
     print (prompts)
-
     #animation_mode = animation_mode
     arger(animation_prompts, prompts, animation_mode, strength, max_frames, border, key_frames, interp_spline, angle, zoom, translation_x, translation_y, color_coherence, previous_frame_noise, previous_frame_strength, video_init_path, extract_nth_frame, interpolate_x_frames, batch_name, outdir, save_grid, save_settings, save_samples, display_samples, n_samples, W, H, init_image, seed, sampler, steps, scale, ddim_eta, seed_behavior, n_batch, use_init, timestring, noise_schedule, strength_schedule, contrast_schedule, resume_from_timestring, resume_timestring)
     args = SimpleNamespace(**arger(animation_prompts, prompts, animation_mode, strength, max_frames, border, key_frames, interp_spline, angle, zoom, translation_x, translation_y, color_coherence, previous_frame_noise, previous_frame_strength, video_init_path, extract_nth_frame, interpolate_x_frames, batch_name, outdir, save_grid, save_settings, save_samples, display_samples, n_samples, W, H, init_image, seed, sampler, steps, scale, ddim_eta, seed_behavior, n_batch, use_init, timestring, noise_schedule, strength_schedule, contrast_schedule, resume_from_timestring, resume_timestring))
-
-
-
-
-
-
-    #prompts = [
-    #    "a beautiful forest by Asher Brown Durand, trending on Artstation", #the first prompt I want
-    #    "a beautiful portrait of a woman by Artgerm, trending on Artstation", #the second prompt I want
-    #    #"the third prompt I don't want it I commented it with an",
-    #]
-
-    #animation_prompts = {
-    #    0: "a beautiful apple, trending on Artstation",
-    #    20: "a beautiful banana, trending on Artstation",
-    #    30: "a beautiful coconut, trending on Artstation",
-    #    40: "a beautiful durian, trending on Artstation",
-    #}
-
 
     if args.animation_mode == 'None':
         args.max_frames = 1
@@ -670,7 +848,6 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
 
     args.timestring = time.strftime('%Y%m%d%H%M%S')
     args.strength = max(0.0, min(1.0, args.strength))
-
 
     if args.seed == -1:
         args.seed = random.randint(0, 2**32)
@@ -696,10 +873,6 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
 
     print(angle_series)
     return images
-
-
-
-
 
 anim = gr.Interface(
     anim,
@@ -746,8 +919,6 @@ anim = gr.Interface(
         gr.Textbox(label='Contrast Schedule',  placeholder="0:(0)", lines=1, value="0:(1.0)"),
         gr.Checkbox(label='Resume from Timestring', value=False, visible=True),
         gr.Textbox(label='Resume from:',  placeholder="20220829210106", lines=1, value="20220829210106"),
-
-
     ],
     outputs=[
         gr.Gallery(),
@@ -757,8 +928,6 @@ anim = gr.Interface(
 )
 
 demo = gr.TabbedInterface(interface_list=[anim], tab_names=["Anim"])
-
-#demo.launch(share=True, enable_queue=True)
 
 class ServerLauncher(threading.Thread):
     def __init__(self, demo):
