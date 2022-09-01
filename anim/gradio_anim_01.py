@@ -25,6 +25,8 @@ from torchvision.utils import make_grid
 from tqdm import tqdm, trange
 from types import SimpleNamespace
 from torch import autocast
+import subprocess
+from base64 import b64encode
 import gradio as gr
 
 
@@ -204,6 +206,48 @@ def sample_to_cv2(sample: torch.Tensor) -> np.ndarray:
     sample_int8 = (sample_f32 * 255).astype(np.uint8)
     return sample_int8
 
+def makevideo(args):
+    skip_video_for_run_all = False #@param {type: 'boolean'}
+    fps = 12#@param {type:"number"}
+
+    if skip_video_for_run_all == True:
+        print('Skipping video creation, uncheck skip_video_for_run_all if you want to run it')
+    else:
+        print('Saving video')
+        image_path = os.path.join(args.outdir, f"{args.timestring}_%05d.png")
+        mp4_path = os.path.join(args.outdir, f"{args.timestring}.mp4")
+
+        print(f"{image_path} -> {mp4_path}")
+
+        # make video
+
+        #cmd = f'ffmpeg -y -vcodec png -r {str(fps)} -start_number {str(0)} -i {image_path} -frames:v {str(args.max_frames)} -c:v -vf fps={fps} -pix_fmt yuv420p -crf 17 -preset very_fast {mp4_path}'
+        cmd = [
+        'ffmpeg',
+        '-y',
+        '-vcodec', 'png',
+        '-r', str(fps),
+        '-start_number', str(0),
+        '-i', image_path,
+        '-frames:v', str(args.max_frames),
+        '-c:v', 'libx264',
+        '-vf',
+        f'fps={fps}',
+        '-pix_fmt', 'yuv420p',
+        '-crf', '17',
+        '-preset', 'veryfast',
+        mp4_path
+        ]
+        subprocess.call(cmd)
+        #process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        #stdout, stderr = process.communicate()
+        #if process.returncode != 0:
+        #    print(stderr)
+        #    raise RuntimeError(stderr)
+
+        #mp4 = open(mp4_path,'rb').read()
+        #data_url = "data:video/mp4;base64," + b64encode(mp4).decode()
+        #display.display( display.HTML(f'<video controls loop><source src="{data_url}" type="video/mp4"></video>') )
 
 model_config = "v1-inference.yaml" #@param ["custom","v1-inference.yaml"]
 model_checkpoint =  "model.ckpt" #@param ["custom","sd-v1-4-full-ema.ckpt","sd-v1-4.ckpt","sd-v1-3-full-ema.ckpt","sd-v1-3.ckpt","sd-v1-2-full-ema.ckpt","sd-v1-2.ckpt","sd-v1-1-full-ema.ckpt","sd-v1-1.ckpt"]
@@ -427,7 +471,7 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
         #args.prompts = animation_prompts
 
         # resume animation
-        start_frame = 1
+        start_frame = 0
         if args.resume_from_timestring:
             for tmp in os.listdir(args.outdir):
                 if tmp.split("_")[0] == args.resume_timestring:
@@ -847,6 +891,7 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
         contrast_schedule_series = get_inbetweens(parse_key_frames(args.contrast_schedule))
 
     args.timestring = time.strftime('%Y%m%d%H%M%S')
+    args.outdir = f'{args.outdir}/{args.timestring}'
     args.strength = max(0.0, min(1.0, args.strength))
 
     if args.seed == -1:
@@ -872,6 +917,7 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
         render_image_batch(args)
 
     print(angle_series)
+    makevideo(args)
     return images
 
 anim = gr.Interface(
@@ -887,7 +933,7 @@ anim = gr.Interface(
         gr.Dropdown(label='Spline Interpolation', choices=["Linear", "Quadratic", "Cubic"], value="Linear"),
         gr.Textbox(label='Angles',  placeholder="0:(0)", lines=1, value="0:(0)"),
         gr.Textbox(label='Zoom',  placeholder="0: (1.04)", lines=1, value="0:(1.04)"),
-        gr.Textbox(label='Translation X',  placeholder="0: (0)", lines=1, value="0:(0)"),
+        gr.Textbox(label='Translation X (+ is Camera Left, large values [1 - 50])',  placeholder="0: (0)", lines=1, value="0:(0)"),
         gr.Textbox(label='Translation Y',  placeholder="0: (0)", lines=1, value="0:(0)"),
         gr.Dropdown(label='Color Coherence', choices=['None', "Match Frame 0 HSV", "Match Frame 0 LAB", "Match Frame 0 RGB"], value="Match Frame 0 RGB"),
         gr.Slider(minimum=0.01, maximum=1.00, step=0.01, label='Prev Frame Noise', value=0.02),
@@ -939,6 +985,7 @@ class ServerLauncher(threading.Thread):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         gradio_params = {
+            'server_port': 7860,
             'show_error': True,
             'server_name': '0.0.0.0'#,
             #'share': opt.share
