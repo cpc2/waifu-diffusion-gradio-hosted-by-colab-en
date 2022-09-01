@@ -239,6 +239,8 @@ def makevideo(args):
         mp4_path
         ]
         subprocess.call(cmd)
+    args.mp4_path = mp4_path
+    return mp4_path
         #process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         #stdout, stderr = process.communicate()
         #if process.returncode != 0:
@@ -918,38 +920,39 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
 
     print(angle_series)
     makevideo(args)
-    return images
+    #return images
+    return args.mp4_path
 
 anim = gr.Interface(
     anim,
     inputs=[
-        gr.Textbox(label='Prompts',  placeholder="a beautiful forest by Asher Brown Durand, trending on Artstation\na beautiful city by Asher Brown Durand, trending on Artstation", lines=5),
-        gr.Textbox(label='Keyframes or Prompts for batch',  placeholder="0\n5 ", lines=5, value="0\n5"),
-        gr.Dropdown(label='Animation Mode', choices=["None", "2D", "Video Input", "Interpolation"], value="2D"),
-        gr.Slider(minimum=0, maximum=1, step=0.1, label='Init Image Strength', value=0.5),
-        gr.Slider(minimum=1, maximum=1000, step=1, label='Max frames', value=100),
-        gr.Dropdown(label='Border', choices=["wrap", "replicate"], value="wrap"),
-        gr.Checkbox(label='KeyFrames', value=True, visible=False),
-        gr.Dropdown(label='Spline Interpolation', choices=["Linear", "Quadratic", "Cubic"], value="Linear"),
-        gr.Textbox(label='Angles',  placeholder="0:(0)", lines=1, value="0:(0)"),
-        gr.Textbox(label='Zoom',  placeholder="0: (1.04)", lines=1, value="0:(1.04)"),
-        gr.Textbox(label='Translation X (+ is Camera Left, large values [1 - 50])',  placeholder="0: (0)", lines=1, value="0:(0)"),
-        gr.Textbox(label='Translation Y',  placeholder="0: (0)", lines=1, value="0:(0)"),
-        gr.Dropdown(label='Color Coherence', choices=['None', "Match Frame 0 HSV", "Match Frame 0 LAB", "Match Frame 0 RGB"], value="Match Frame 0 RGB"),
-        gr.Slider(minimum=0.01, maximum=1.00, step=0.01, label='Prev Frame Noise', value=0.02),
-        gr.Slider(minimum=0.01, maximum=1.00, step=0.01, label='Prev Frame Strength', value=0.4),
-        gr.Textbox(label='Video init path',  placeholder='/content/video_in.mp4', lines=1),
-        gr.Slider(minimum=1, maximum=100, step=1, label='Extract n-th frame', value=1),
-        gr.Slider(minimum=1, maximum=25, step=1, label='Interpolate n frames', value=4),
-        gr.Textbox(label='Batch Name',  placeholder="Batch_001", lines=1, value="SDAnim"),
-        gr.Textbox(label='Output Dir',  placeholder="/content/", lines=1, value='/gdrive/MyDrive/sd_anims/'),
-        gr.Checkbox(label='Save Grid', value=False, visible=False),
-        gr.Checkbox(label='Save Settings', value=True, visible=True),
-        gr.Checkbox(label='Save Samples', value=True, visible=True),
-        gr.Checkbox(label='Display Samples', value=True, visible=False),
-        gr.Slider(minimum=1, maximum=4, step=1, label='Samples (keep on 1)', value=1),
-        gr.Slider(minimum=256, maximum=1024, step=64, label='Width', value=512),
-        gr.Slider(minimum=256, maximum=1024, step=64, label='Height', value=512),
+        gr.Textbox(label='Prompts',  placeholder="a beautiful forest by Asher Brown Durand, trending on Artstation\na beautiful city by Asher Brown Durand, trending on Artstation", lines=5),#animation_prompts
+        gr.Textbox(label='Keyframes or Prompts for batch',  placeholder="0\n5 ", lines=5, value="0\n5"),#prompts
+        gr.Dropdown(label='Animation Mode', choices=["None", "2D", "Video Input", "Interpolation"], value="2D"),#animation_mode
+        gr.Slider(minimum=0, maximum=1, step=0.1, label='Init Image Strength', value=0.5),#strength
+        gr.Slider(minimum=1, maximum=1000, step=1, label='Max frames', value=100),#max_frames
+        gr.Dropdown(label='Border', choices=["wrap", "replicate"], value="wrap"),#border
+        gr.Checkbox(label='KeyFrames', value=True, visible=True),#key_frames
+        gr.Dropdown(label='Spline Interpolation', choices=["Linear", "Quadratic", "Cubic"], value="Linear"),#interp_spline
+        gr.Textbox(label='Angles',  placeholder="0:(0)", lines=1, value="0:(0)"),#angle
+        gr.Textbox(label='Zoom',  placeholder="0: (1.04)", lines=1, value="0:(1.04)"),#zoom
+        gr.Textbox(label='Translation X (+ is Camera Left, large values [1 - 50])',  placeholder="0: (0)", lines=1, value="0:(0)"),#translation_x
+        gr.Textbox(label='Translation Y',  placeholder="0: (0)", lines=1, value="0:(0)"),#translation_y
+        gr.Dropdown(label='Color Coherence', choices=['None', "Match Frame 0 HSV", "Match Frame 0 LAB", "Match Frame 0 RGB"], value="Match Frame 0 RGB"),#color_coherence
+        gr.Slider(minimum=0.01, maximum=1.00, step=0.01, label='Prev Frame Noise', value=0.02),#previous_frame_noise
+        gr.Slider(minimum=0.01, maximum=1.00, step=0.01, label='Prev Frame Strength', value=0.4),#previous_frame_strength
+        gr.Textbox(label='Video init path',  placeholder='/content/video_in.mp4', lines=1),#video_init_path
+        gr.Slider(minimum=1, maximum=100, step=1, label='Extract n-th frame', value=1),#steps
+        gr.Slider(minimum=1, maximum=25, step=1, label='Interpolate n frames', value=4),#interpolate_x_frames
+        gr.Textbox(label='Batch Name',  placeholder="Batch_001", lines=1, value="SDAnim"),#batch_name
+        gr.Textbox(label='Output Dir',  placeholder="/content/", lines=1, value='/gdrive/MyDrive/sd_anims/'),#outdir
+        gr.Checkbox(label='Save Grid', value=False, visible=False),#save_grid
+        gr.Checkbox(label='Save Settings', value=True, visible=True),#save_settings
+        gr.Checkbox(label='Save Samples', value=True, visible=True),#save_samples
+        gr.Checkbox(label='Display Samples', value=True, visible=False),#display_samples
+        gr.Slider(minimum=1, maximum=4, step=1, label='Samples (keep on 1)', value=1),#n_samples
+        gr.Slider(minimum=256, maximum=1024, step=64, label='Width', value=512),#width
+        gr.Slider(minimum=256, maximum=1024, step=64, label='Height', value=512),#height
         gr.Textbox(label='Init Image link',  placeholder="https://cdn.pixabay.com/photo/2022/07/30/13/10/green-longhorn-beetle-7353749_1280.jpg", lines=5),
         gr.Number(label='Seed',  placeholder="SEED HERE", value='-1'),
         gr.Radio(label='Sampler', choices=["klms","dpm2","dpm2_ancestral","heun","euler","euler_ancestral","plms", "ddim"], value="klms"),
@@ -967,7 +970,7 @@ anim = gr.Interface(
         gr.Textbox(label='Resume from:',  placeholder="20220829210106", lines=1, value="20220829210106"),
     ],
     outputs=[
-        gr.Gallery(),
+        gr.Video(),
     ],
     title="Stable Diffusion Animation",
     description="",
