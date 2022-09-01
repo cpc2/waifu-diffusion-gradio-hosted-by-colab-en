@@ -1,4 +1,5 @@
-https://github.com/XmYx/waifu-diffusion-gradio-hosted-by-colab-en/blob/main/PUB_HLKY_StableDiffusion_GradIO_Colab.ipynb
+
+[![HLKY/Deforum Animation](https://colab.research.google.com/assets/colab-badge.svg)](https://github.com/XmYx/waifu-diffusion-gradio-hosted-by-colab-en/blob/main/PUB_HLKY_StableDiffusion_GradIO_Colab.ipynb)
 
 # Stable Diffusion (Colab version with GradIO web interface):
 
