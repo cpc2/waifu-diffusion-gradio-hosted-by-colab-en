@@ -692,34 +692,34 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
                 display.clear_output(wait=True)
                 display.display(grid_image)
 
-    def render_input_video(args, anim_args):
+    def render_input_video(args):
         # create a folder for the video input frames to live in
         video_in_frame_path = os.path.join(args.outdir, 'inputframes')
         os.makedirs(os.path.join(args.outdir, video_in_frame_path), exist_ok=True)
 
         # save the video frames from input video
-        print(f"Exporting Video Frames (1 every {anim_args.extract_nth_frame}) frames to {video_in_frame_path}...")
+        print(f"Exporting Video Frames (1 every {args.extract_nth_frame}) frames to {video_in_frame_path}...")
         try:
             for f in pathlib.Path(video_in_frame_path).glob('*.jpg'):
                 f.unlink()
         except:
             pass
-        vf = r'select=not(mod(n\,'+str(anim_args.extract_nth_frame)+'))'
+        vf = r'select=not(mod(n\,'+str(args.extract_nth_frame)+'))'
         subprocess.run([
-            'ffmpeg', '-i', f'{anim_args.video_init_path}',
+            'ffmpeg', '-i', f'{args.video_init_path}',
             '-vf', f'{vf}', '-vsync', 'vfr', '-q:v', '2',
             '-loglevel', 'error', '-stats',
             os.path.join(video_in_frame_path, '%04d.jpg')
         ], stdout=subprocess.PIPE).stdout.decode('utf-8')
 
         # determine max frames from length of input frames
-        anim_args.max_frames = len([f for f in pathlib.Path(video_in_frame_path).glob('*.jpg')])
+        args.max_frames = len([f for f in pathlib.Path(video_in_frame_path).glob('*.jpg')])
 
         args.use_init = True
-        print(f"Loading {anim_args.max_frames} input frames from {video_in_frame_path} and saving video frames to {args.outdir}")
+        print(f"Loading {args.max_frames} input frames from {video_in_frame_path} and saving video frames to {args.outdir}")
         render_animation(args, anim_args)
 
-    def render_interpolation(args, anim_args):
+    def render_interpolation(args):
         # animations use key framed prompts
         args.prompts = animation_prompts
 
@@ -730,7 +730,7 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
         # save settings for the batch
         settings_filename = os.path.join(args.outdir, f"{args.timestring}_settings.txt")
         with open(settings_filename, "w+", encoding="utf-8") as f:
-            s = {**dict(args.__dict__), **dict(anim_args.__dict__)}
+            s = {**dict(args.__dict__), **dict(args.__dict__)}
             json.dump(s, f, ensure_ascii=False, indent=4)
 
         # Interpolation Settings
@@ -758,7 +758,7 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
 
         frame_idx = 0
 
-        if anim_args.interpolate_key_frames:
+        if args.interpolate_key_frames:
           for i in range(len(prompts_c_s)-1):
             dist_frames = list(animation_prompts.items())[i+1][0] - list(animation_prompts.items())[i][0]
             if dist_frames <= 0:
@@ -786,11 +786,11 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
 
         else:
           for i in range(len(prompts_c_s)-1):
-            for j in range(anim_args.interpolate_x_frames+1):
+            for j in range(args.interpolate_x_frames+1):
               # interpolate the text embedding
               prompt1_c = prompts_c_s[i]
               prompt2_c = prompts_c_s[i+1]
-              args.init_c = prompt1_c.add(prompt2_c.sub(prompt1_c).mul(j * 1/(anim_args.interpolate_x_frames+1)))
+              args.init_c = prompt1_c.add(prompt2_c.sub(prompt1_c).mul(j * 1/(args.interpolate_x_frames+1)))
 
               # sample the diffusion model
               results = generate(args)
@@ -865,9 +865,9 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
     if args.animation_mode == '2D':
         render_animation(args)
     elif args.animation_mode == 'Video Input':
-        render_animation(args)
+        render_input_video(args)
     elif args.animation_mode == 'Interpolation':
-        render_animation(args)
+        render_interpolation(args)
     else:
         render_image_batch(args)
 
@@ -880,7 +880,7 @@ anim = gr.Interface(
         gr.Textbox(label='Prompts',  placeholder="a beautiful forest by Asher Brown Durand, trending on Artstation\na beautiful city by Asher Brown Durand, trending on Artstation", lines=5),
         gr.Textbox(label='Keyframes or Prompts for batch',  placeholder="0\n5 ", lines=5, value="0\n5"),
         gr.Dropdown(label='Animation Mode', choices=["None", "2D", "Video Input", "Interpolation"], value="2D"),
-        gr.Slider(minimum=0, maximum=1, step=0.1, label='Max frames', value=0.5),
+        gr.Slider(minimum=0, maximum=1, step=0.1, label='Init Image Strength', value=0.5),
         gr.Slider(minimum=1, maximum=1000, step=1, label='Max frames', value=100),
         gr.Dropdown(label='Border', choices=["wrap", "replicate"], value="wrap"),
         gr.Checkbox(label='KeyFrames', value=True, visible=False),
@@ -889,7 +889,7 @@ anim = gr.Interface(
         gr.Textbox(label='Zoom',  placeholder="0: (1.04)", lines=1, value="0:(1.04)"),
         gr.Textbox(label='Translation X',  placeholder="0: (0)", lines=1, value="0:(0)"),
         gr.Textbox(label='Translation Y',  placeholder="0: (0)", lines=1, value="0:(0)"),
-        gr.Dropdown(label='Color Coherence', choices=["None", "MatchFrame0"], value="MatchFrame0"),
+        gr.Dropdown(label='Color Coherence', choices=['None', "Match Frame 0 HSV", "Match Frame 0 LAB", "Match Frame 0 RGB"], value="Match Frame 0 RGB"),
         gr.Slider(minimum=0.01, maximum=1.00, step=0.01, label='Prev Frame Noise', value=0.02),
         gr.Slider(minimum=0.01, maximum=1.00, step=0.01, label='Prev Frame Strength', value=0.4),
         gr.Textbox(label='Video init path',  placeholder='/content/video_in.mp4', lines=1),
