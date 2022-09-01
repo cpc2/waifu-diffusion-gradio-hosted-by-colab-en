@@ -1,3 +1,5 @@
+https://github.com/XmYx/waifu-diffusion-gradio-hosted-by-colab-en/blob/main/PUB_HLKY_StableDiffusion_GradIO_Colab.ipynb
+
 # Stable Diffusion (Colab version with GradIO web interface):
 
 English Notebook:
