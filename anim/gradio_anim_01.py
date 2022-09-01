@@ -763,7 +763,7 @@ def anim(animation_mode: str, animation_prompts: str, key_frames: bool, prompts:
 
         args.use_init = True
         print(f"Loading {args.max_frames} input frames from {video_in_frame_path} and saving video frames to {args.outdir}")
-        render_animation(args, anim_args)
+        render_animation(args)
 
     def render_interpolation(args):
         # animations use key framed prompts
