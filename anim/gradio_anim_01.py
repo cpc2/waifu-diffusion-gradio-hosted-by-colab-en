@@ -1,12 +1,14 @@
 import json
 from IPython import display
 import os
+import threading, asyncio
 import argparse, glob, os, pathlib, subprocess, sys, time
 import cv2
 import numpy as np
 import pandas as pd
 import random
 import requests
+import pynvml
 import shutil
 import torch
 import torch.nn as nn
@@ -24,6 +26,12 @@ from tqdm import tqdm, trange
 from types import SimpleNamespace
 from torch import autocast
 import gradio as gr
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--gpu", type=int, help="choose which GPU to use if you have multiple", default=0)
+parser.add_argument("--cli", type=str, help="don't launch web server, take Python function kwargs from this file.", default=None)
+opt = parser.parse_args()
 
 
 sys.path.append('./src/taming-transformers')
@@ -46,6 +54,59 @@ output_path = "/content/output" #@param {type:"string"}
 #@markdown **Google Drive Path Variables (Optional)**
 mount_google_drive = False #@param {type:"boolean"}
 force_remount = False
+class MemUsageMonitor(threading.Thread):
+    stop_flag = False
+    max_usage = 0
+    total = -1
+
+    def __init__(self, name):
+        threading.Thread.__init__(self)
+        self.name = name
+
+    def run(self):
+        try:
+            pynvml.nvmlInit()
+        except:
+            print(f"[{self.name}] Unable to initialize NVIDIA management. No memory stats. \n")
+            return
+        print(f"[{self.name}] Recording max memory usage...\n")
+        handle = pynvml.nvmlDeviceGetHandleByIndex(opt.gpu)
+        self.total = pynvml.nvmlDeviceGetMemoryInfo(handle).total
+        while not self.stop_flag:
+            m = pynvml.nvmlDeviceGetMemoryInfo(handle)
+            self.max_usage = max(self.max_usage, m.used)
+            # print(self.max_usage)
+            time.sleep(0.1)
+        print(f"[{self.name}] Stopped recording.\n")
+        pynvml.nvmlShutdown()
+
+    def read(self):
+        return self.max_usage, self.total
+
+    def stop(self):
+        self.stop_flag = True
+
+    def read_and_stop(self):
+        self.stop_flag = True
+        return self.max_usage, self.total
+
+def torch_gc():
+    torch.cuda.empty_cache()
+    torch.cuda.ipc_collect()
+
+def crash(e, s):
+    global model
+    global device
+
+    print(s, '\n', e)
+
+    del model
+    del device
+
+    print('exiting...calling os._exit(0)')
+    t = threading.Timer(0.25, os._exit, args=[0])
+    t.start()
+
 class CFGDenoiser(nn.Module):
     def __init__(self, model):
         super().__init__()
@@ -449,6 +510,16 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
         return key_frame_series
 
     def generate(args, return_latent=False, return_sample=False, return_c=False):
+
+        torch_gc()
+        # start time after garbage collection (or before?)
+        start_time = time.time()
+
+        mem_mon = MemUsageMonitor('MemMon')
+        mem_mon.start()
+
+
+
         seed_everything(args.seed)
         os.makedirs(args.outdir, exist_ok=True)
 
@@ -548,6 +619,7 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
                             image = Image.fromarray(x_sample.astype(np.uint8))
                             images.append(image)
                             results.append(image)
+        torch_gc()
         return results
 
     prom = animation_prompts
@@ -632,8 +704,8 @@ def anim(animation_prompts: str, prompts: str, animation_mode: str, strength: fl
 anim = gr.Interface(
     anim,
     inputs=[
-        gr.Textbox(label='Prompts',  placeholder="\"a beautiful forest by Asher Brown Durand, trending on Artstation\"", lines=5),
-        gr.Textbox(label='Keyframes or Prompts for batch',  placeholder="0: \"a beautiful apple, trending on Artstation\"", lines=5),
+        gr.Textbox(label='Prompts',  placeholder="a beautiful forest by Asher Brown Durand, trending on Artstation\na beautiful city by Asher Brown Durand, trending on Artstation", lines=5),
+        gr.Textbox(label='Keyframes or Prompts for batch',  placeholder="0\n5 ", lines=5, value="0\n5"),
         gr.Dropdown(label='Animation Mode', choices=["None", "2D", "Video Input", "Interpolation"], value="2D"),
         gr.Slider(minimum=0, maximum=1, step=0.1, label='Max frames', value=0.5),
         gr.Slider(minimum=1, maximum=1000, step=1, label='Max frames', value=100),
@@ -644,14 +716,14 @@ anim = gr.Interface(
         gr.Textbox(label='Zoom',  placeholder="0: (1.04)", lines=1, value="0:(1.04)"),
         gr.Textbox(label='Translation X',  placeholder="0: (0)", lines=1, value="0:(0)"),
         gr.Textbox(label='Translation Y',  placeholder="0: (0)", lines=1, value="0:(0)"),
-        gr.Dropdown(label='Color Coherence', choices=["None", "MatchFrame0"], value="None"),
+        gr.Dropdown(label='Color Coherence', choices=["None", "MatchFrame0"], value="MatchFrame0"),
         gr.Slider(minimum=0.01, maximum=1.00, step=0.01, label='Prev Frame Noise', value=0.02),
         gr.Slider(minimum=0.01, maximum=1.00, step=0.01, label='Prev Frame Strength', value=0.4),
         gr.Textbox(label='Video init path',  placeholder='/content/video_in.mp4', lines=1),
         gr.Slider(minimum=1, maximum=100, step=1, label='Extract n-th frame', value=1),
         gr.Slider(minimum=1, maximum=25, step=1, label='Interpolate n frames', value=4),
-        gr.Textbox(label='Batch Name',  placeholder="Batch_001", lines=1, value="test"),
-        gr.Textbox(label='Output Dir',  placeholder="/content/", lines=1, value='/content/test'),
+        gr.Textbox(label='Batch Name',  placeholder="Batch_001", lines=1, value="SDAnim"),
+        gr.Textbox(label='Output Dir',  placeholder="/content/", lines=1, value='/gdrive/MyDrive/sd_anims/'),
         gr.Checkbox(label='Save Grid', value=False, visible=False),
         gr.Checkbox(label='Save Settings', value=True, visible=True),
         gr.Checkbox(label='Save Samples', value=True, visible=True),
@@ -662,7 +734,7 @@ anim = gr.Interface(
         gr.Textbox(label='Init Image link',  placeholder="https://cdn.pixabay.com/photo/2022/07/30/13/10/green-longhorn-beetle-7353749_1280.jpg", lines=5),
         gr.Number(label='Seed',  placeholder="SEED HERE", value='-1'),
         gr.Radio(label='Sampler', choices=["klms","dpm2","dpm2_ancestral","heun","euler","euler_ancestral","plms", "ddim"], value="klms"),
-        gr.Slider(minimum=1, maximum=100, step=1, label='Steps', value=100),
+        gr.Slider(minimum=1, maximum=300, step=1, label='Steps', value=100),
         gr.Slider(minimum=1, maximum=25, step=1, label='Scale', value=11),
         gr.Slider(minimum=0, maximum=1.0, step=0.1, label='DDIM ETA', value=0.0),
         gr.Dropdown(label='Seed Behavior', choices=["iter", "fixed", "random"], value="iter"),
@@ -686,4 +758,64 @@ anim = gr.Interface(
 
 demo = gr.TabbedInterface(interface_list=[anim], tab_names=["Anim"])
 
-demo.launch(share=True)
+#demo.launch(share=True, enable_queue=True)
+
+class ServerLauncher(threading.Thread):
+    def __init__(self, demo):
+        threading.Thread.__init__(self)
+        self.name = 'Gradio Server Thread'
+        self.demo = demo
+
+    def run(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        gradio_params = {
+            'show_error': True,
+            'server_name': '0.0.0.0'#,
+            #'share': opt.share
+        }
+        #if not opt.share:
+        demo.queue(concurrency_count=1)
+        #if opt.share and opt.share_password:
+        #    gradio_params['auth'] = ('webui', opt.share_password)
+        self.demo.launch(**gradio_params)
+
+    def stop(self):
+        self.demo.close() # this tends to hang
+
+def launch_server():
+    server_thread = ServerLauncher(demo)
+    server_thread.start()
+
+    try:
+        while server_thread.is_alive():
+            time.sleep(60)
+    except (KeyboardInterrupt, OSError) as e:
+        crash(e, 'Shutting down...')
+
+def run_headless():
+    with open(opt.cli, 'r', encoding='utf8') as f:
+        kwargs = yaml.safe_load(f)
+    target = kwargs.pop('target')
+    if target == 'txt2img':
+        target_func = txt2img
+    elif target == 'img2img':
+        target_func = img2img
+        raise NotImplementedError()
+    else:
+        raise ValueError(f'Unknown target: {target}')
+    prompts = kwargs.pop("prompt")
+    prompts = prompts if type(prompts) is list else [prompts]
+    for i, prompt_i in enumerate(prompts):
+        print(f"===== Prompt {i+1}/{len(prompts)}: {prompt_i} =====")
+        output_images, seed, info, stats = target_func(prompt=prompt_i, **kwargs)
+        print(f'Seed: {seed}')
+        print(info)
+        print(stats)
+        print()
+
+if __name__ == '__main__':
+    #if opt.cli is None:
+        launch_server()
+    #else:
+    #    run_headless()
