@@ -267,8 +267,7 @@ def dream(prompt: str, mask_mode, init_img_arr, keep_mask, mask_blur_strength, d
         init_mask = init_img_arr['mask']
         init_mask.save('init_mask_1.png')
     elif mask_mode == 'Crop':
-        init_img = init_img_arr['image']
-        init_img.save('init_img_1.png')
+        init_img = init_img_arr
         init_mask = None
     else:
         init_img = None
