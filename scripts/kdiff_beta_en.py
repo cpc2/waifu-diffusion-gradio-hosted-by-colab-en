@@ -187,10 +187,10 @@ def split_weighted_subprompts(text):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config", default="./configs/stable-diffusion/v1-inference.yaml", type=str)
-parser.add_argument("--ckpt", default="/gdrive/MyDrive/model.ckpt", type=str)
+parser.add_argument("--ckpt", default="/notebooks/model.ckpt", type=str)
 parser.add_argument("--precision", default="autocast", type=str)
 #parser.add_argument("--outdir", default="./outputs/txt2img-samples", type=str)
-parser.add_argument("--GFPGAN", default='/content/GFPGAN/experiments/pretrained_models/GFPGANv1.3.pth', type=str)
+parser.add_argument("--GFPGAN", default='/notebooks/GFPGAN/experiments/pretrained_models/GFPGANv1.3.pth', type=str)
 
 args = parser.parse_args()
 
