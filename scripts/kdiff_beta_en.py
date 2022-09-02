@@ -267,8 +267,10 @@ def dream(prompt: str, mask_mode, init_img_arr, keep_mask, mask_blur_strength, d
         init_mask = init_img_arr['mask']
         init_mask.save('init_mask_1.png')
     elif mask_mode == 'Crop':
+        print("a1")
         init_img = init_img_arr
         init_mask = None
+        print("a2")
     else:
         init_img = None
         init_mask = None
@@ -280,6 +282,7 @@ def dream(prompt: str, mask_mode, init_img_arr, keep_mask, mask_blur_strength, d
 
     torch.cuda.empty_cache()
     if init_img_arr != None:
+        print("a3")
         init_img = init_img.convert("RGB")
         init_img = resize_image(resize_mode, init_img, width, height)
     if init_mask != None and mask_mode == 'Mask':
