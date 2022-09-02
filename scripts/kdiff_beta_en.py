@@ -267,10 +267,8 @@ def dream(prompt: str, mask_mode, init_img_arr, keep_mask, mask_blur_strength, d
         init_mask = init_img_arr['mask']
         init_mask.save('init_mask_1.png')
     elif mask_mode == 'Crop':
-        print("a1")
         init_img = init_img_arr
         init_mask = None
-        print("a2")
     else:
         init_img = None
         init_mask = None
@@ -282,7 +280,6 @@ def dream(prompt: str, mask_mode, init_img_arr, keep_mask, mask_blur_strength, d
 
     torch.cuda.empty_cache()
     if init_img_arr != None:
-        print("a3")
         init_img = init_img.convert("RGB")
         init_img = resize_image(resize_mode, init_img, width, height)
     if init_mask != None and mask_mode == 'Mask':
@@ -561,7 +558,7 @@ with gr.Blocks(css=css, analytics_enabled=False, title="Stable Diffusion") as de
                 with gr.Column():
                     gr.Markdown("IMG2IMG with Stable Diffusion - Momicro's Fork")
                     prompt = gr.Textbox(label='Text request. Supports weighting query parts with ":number" (the space after the number is mandatory). Normal request is also supported.',  placeholder="A corgi wearing a top hat as an oil painting.", lines=1)
-                    image_editor_mode = gr.Radio(choices=["Mask", "Crop"], label="Image change mode, you may have to close the image and reload when changing", value="Crop")
+                    image_editor_mode = gr.Radio(choices=["Mask", "Crop"], label="Image change mode, you may have to close the image and reload when changing", value="Mask")
                     with gr.Row():
                         painterro_btn = gr.Button("Аdvanced Editor")
                         copy_from_painterro_btn = gr.Button(value="Get image from Advanced Editor")
