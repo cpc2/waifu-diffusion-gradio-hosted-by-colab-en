@@ -267,7 +267,8 @@ def dream(prompt: str, mask_mode, init_img_arr, keep_mask, mask_blur_strength, d
         init_mask = init_img_arr['mask']
         init_mask.save('init_mask_1.png')
     elif mask_mode == 'Crop':
-        init_img = init_img_arr
+        init_img = init_img_arr['image']
+        init_img.save('init_img_1.png')
         init_mask = None
     else:
         init_img = None
@@ -460,7 +461,7 @@ def dream(prompt: str, mask_mode, init_img_arr, keep_mask, mask_blur_strength, d
     for i in trange(len(output_images), desc="prompts"):
         z = 0
         aaa = output_images[i][0]
-        message+= f'Запрос "{output_images[i][1]}" находится в папке {outpath}/{aaa}/ \n'
+        message+= f'Request "{output_images[i][1]}" saved in the folder {outpath}/{aaa}/ \n'
         for k in range(2, len(output_images[i])):
             if k%batch_size == 0:
                 cfg=cfg_scales[z]
@@ -533,11 +534,11 @@ with gr.Blocks(css=css, analytics_enabled=False, title="Stable Diffusion") as de
                     seed = gr.Number(label='Seed', value=-1)
                     same_seed = gr.Checkbox(label='The same seed every time. In order to generate the same thing with the same request.', value=False)
                     height = gr.Slider(minimum=64, maximum=2048, step=64, label="Height", value=512)
-                    width = gr.Slider(minimum=64, maximum=2048, step=64, label="Шidth", value=512)
+                    width = gr.Slider(minimum=64, maximum=2048, step=64, label="Width", value=512)
                     GFPGAN = gr.Checkbox(label='GFPGAN, restores faces, can upscale. All settings are below it.', value=True)
                     bg_upsampling = gr.Checkbox(label='BG Enhancement', value=True)
                     upscale = gr.Slider(minimum=1, maximum=8, step=1, label="Upscaling. 1 = OFF.", value=2)
-                    outdir =  gr.Textbox(label='Save Dir:', value = "/gdrive/My Drive/GradIO_out/")
+                    outdir =  gr.Textbox(label='Save Dir:', value = "/notebooks/GradIO_out/")
 
                     btn = gr.Button("Generate")
                     placeholder_none = gr.Variable(value=None, visible=False)
@@ -582,7 +583,7 @@ with gr.Blocks(css=css, analytics_enabled=False, title="Stable Diffusion") as de
                     GFPGAN = gr.Checkbox(label='GFPGAN, restores faces, can upscale. All settings are below it.', value=True)
                     bg_upsampling = gr.Checkbox(label='BG Enhancement', value=False)
                     upscale = gr.Slider(minimum=1, maximum=8, step=1, label="Upscale, 1 = OFF", value=1)
-                    outdir =  gr.Textbox(label='Save Dir:', value = "/gdrive/My Drive/GradIO_out/")
+                    outdir =  gr.Textbox(label='Save Dir:', value = "/notebooks/GradIO_out/")
 
                     btn_mask = gr.Button("Generate").style(full_width=True)
                     btn_crop = gr.Button("Generate", visible=False).style(full_width=True)
