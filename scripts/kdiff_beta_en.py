@@ -23,6 +23,7 @@ from gfpgan import GFPGANer
 from io import BytesIO
 import random
 import threading, asyncio
+import time
 
 mimetypes.init()
 mimetypes.add_type('application/javascript', '.js')
@@ -366,7 +367,7 @@ def dream(prompt: str, mask_mode, init_img_arr, keep_mask, mask_blur_strength, d
                         for n in trange(n_iter, desc="Sampling", disable=not accelerator.is_main_process):
 
 
-                            with open(f'{outpath}/prompts/{aaa}_prompt.txt', 'w') as fff:
+                            with open(f'{outpath}/prompts/{int(time.time())}_{aaa}_prompt.txt', 'w') as fff:
                                 fff.write(prompts[0])
 
                             if n_iter > 1: seedit += 1
@@ -468,7 +469,7 @@ def dream(prompt: str, mask_mode, init_img_arr, keep_mask, mask_blur_strength, d
                     z=0
                 else:
                     z+=1
-            pt = f'{outpath}/{aaa}_{cfg}_{random.randint(1, 200000)}.jpg'
+            pt = f'{outpath}/{int(time.time())}_{aaa}_{cfg}.jpg'
             if GFPGAN:
                 (Image.fromarray(FACE_RESTORATION(output_images[i][k], bg_upsampling, upscale, GFPGANth).astype(np.uint8))).save(pt, format = 'JPEG', mize = True)
             else:
